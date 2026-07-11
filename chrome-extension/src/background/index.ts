@@ -1,10 +1,7 @@
 import 'webextension-polyfill';
 import {
-  agentModelStore,
-  AgentNameEnum,
   firewallStore,
   generalSettingsStore,
-  llmProviderStore,
   analyticsSettingsStore,
   humaticaiStore,
   userStore,
@@ -14,13 +11,11 @@ import BrowserContext from './browser/context';
 import { Executor } from './agent/executor';
 import { createLogger } from './log';
 import { ExecutionState } from './agent/event/types';
-import { createChatModel } from './agent/helper';
-import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
+import { createPlanet9ChatModel } from './agent/planet9Model';
 import { DEFAULT_AGENT_OPTIONS } from './agent/types';
-import { SpeechToTextService } from './services/speechToText';
 import { injectBuildDomTreeScripts } from './browser/dom/service';
 import { analytics } from './services/analytics';
-import { streamChat, type HumaticAIImage } from './services/humaticai';
+import { streamChat, transcribeAudio, type HumaticAIImage } from './services/humaticai';
 
 const logger = createLogger('background');
 
@@ -68,6 +63,24 @@ analyticsSettingsStore.subscribe(() => {
   analytics.updateSettings().catch(error => {
     logger.error('Failed to update analytics settings:', error);
   });
+});
+
+// Keep browser context in sync with General settings (highlights, page-load wait)
+async function syncBrowserContextFromGeneralSettings() {
+  try {
+    const generalSettings = await generalSettingsStore.getSettings();
+    browserContext.updateConfig({
+      minimumWaitPageLoadTime: generalSettings.minWaitPageLoad / 1000.0,
+      displayHighlights: generalSettings.displayHighlights,
+    });
+  } catch (error) {
+    logger.error('Failed to sync browser context from general settings:', error);
+  }
+}
+
+syncBrowserContextFromGeneralSettings();
+generalSettingsStore.subscribe(() => {
+  void syncBrowserContextFromGeneralSettings();
 });
 
 // Listen for simple messages (e.g., from options page)
@@ -137,9 +150,6 @@ async function handleHumaticAIMessage(message: {
       userId,
       threadId,
       images: images.length > 0 ? images : undefined,
-      provider: settings.provider,
-      model: settings.model,
-      useRag: settings.useRag,
       signal,
     },
     event => {
@@ -279,11 +289,60 @@ chrome.runtime.onConnect.addListener(port => {
             break;
           }
 
+          case 'humaticai_transcribe': {
+            try {
+              if (!message.audio) {
+                return port.postMessage({
+                  type: 'humaticai_transcribe_error',
+                  error: t('bg_cmd_stt_noAudioData'),
+                });
+              }
+
+              const settings = await humaticaiStore.getSettings();
+              if (!settings.apiKey?.trim()) {
+                return port.postMessage({
+                  type: 'humaticai_transcribe_error',
+                  error: t('bg_setup_noApiKeys'),
+                });
+              }
+
+              let base64Audio = message.audio as string;
+              if (base64Audio.startsWith('data:')) {
+                base64Audio = base64Audio.split(',')[1];
+              }
+              const binary = Uint8Array.from(atob(base64Audio), c => c.charCodeAt(0));
+              const mimeType = ((message.mimeType as string) || 'audio/webm').split(';', 1)[0];
+              const blob = new Blob([binary], { type: mimeType });
+
+              const result = await transcribeAudio({
+                baseUrl: settings.baseUrl,
+                apiKey: settings.apiKey,
+                audio: blob,
+                mimeType,
+                language: typeof message.language === 'string' ? message.language : undefined,
+              });
+
+              return port.postMessage({
+                type: 'humaticai_transcribe_result',
+                text: result.text,
+                language: result.language,
+                duration: result.duration,
+              });
+            } catch (error) {
+              logger.error('Planet 9 transcription failed:', error);
+              return port.postMessage({
+                type: 'humaticai_transcribe_error',
+                error: error instanceof Error ? error.message : t('bg_cmd_stt_failed'),
+              });
+            }
+          }
+
           case 'new_task': {
             if (!message.task) return port.postMessage({ type: 'error', error: t('bg_cmd_newTask_noTask') });
             if (!message.tabId) return port.postMessage({ type: 'error', error: t('bg_errors_noTabId') });
 
             logger.info('new_task', message.tabId, message.task);
+            await browserContext.switchTab(message.tabId);
             currentExecutor = await setupExecutor(message.taskId, message.task, browserContext);
             subscribeToExecutorEvents(currentExecutor);
 
@@ -297,6 +356,7 @@ chrome.runtime.onConnect.addListener(port => {
             if (!message.tabId) return port.postMessage({ type: 'error', error: t('bg_errors_noTabId') });
 
             logger.info('follow_up_task', message.tabId, message.task);
+            await browserContext.switchTab(message.tabId);
 
             if (currentExecutor) {
               currentExecutor.addFollowUpTask(message.task);
@@ -358,41 +418,6 @@ chrome.runtime.onConnect.addListener(port => {
             return port.postMessage({ type: 'success', msg: t('bg_cmd_nohighlight_ok') });
           }
 
-          case 'speech_to_text': {
-            try {
-              if (!message.audio) {
-                return port.postMessage({
-                  type: 'speech_to_text_error',
-                  error: t('bg_cmd_stt_noAudioData'),
-                });
-              }
-
-              logger.info('Processing speech-to-text request...');
-
-              const providers = await llmProviderStore.getAllProviders();
-              const speechToTextService = await SpeechToTextService.create(providers);
-
-              let base64Audio = message.audio;
-              if (base64Audio.startsWith('data:')) {
-                base64Audio = base64Audio.split(',')[1];
-              }
-
-              const transcribedText = await speechToTextService.transcribeAudio(base64Audio);
-
-              logger.info('Speech-to-text completed successfully');
-              return port.postMessage({
-                type: 'speech_to_text_result',
-                text: transcribedText,
-              });
-            } catch (error) {
-              logger.error('Speech-to-text failed:', error);
-              return port.postMessage({
-                type: 'speech_to_text_error',
-                error: error instanceof Error ? error.message : t('bg_cmd_stt_failed'),
-              });
-            }
-          }
-
           case 'replay': {
             if (!message.tabId) return port.postMessage({ type: 'error', error: t('bg_errors_noTabId') });
             if (!message.taskId) return port.postMessage({ type: 'error', error: t('bg_errors_noTaskId') });
@@ -440,33 +465,21 @@ chrome.runtime.onConnect.addListener(port => {
 });
 
 async function setupExecutor(taskId: string, task: string, browserContext: BrowserContext) {
-  const providers = await llmProviderStore.getAllProviders();
-  if (Object.keys(providers).length === 0) {
+  // Planet 9 is the single "LLM" for the browser-agent. No local providers/models.
+  const humaticaiSettings = await humaticaiStore.getSettings();
+  if (!humaticaiSettings.apiKey?.trim()) {
     throw new Error(t('bg_setup_noApiKeys'));
   }
 
-  await agentModelStore.cleanupLegacyValidatorSettings();
+  const userId = await userStore.getUserId();
+  const planet9LLM = createPlanet9ChatModel({
+    apiKey: humaticaiSettings.apiKey,
+    baseUrl: humaticaiSettings.baseUrl,
+    userId,
+  });
 
-  const agentModels = await agentModelStore.getAllAgentModels();
-  for (const agentModel of Object.values(agentModels)) {
-    if (!providers[agentModel.provider]) {
-      throw new Error(t('bg_setup_noProvider', [agentModel.provider]));
-    }
-  }
-
-  const navigatorModel = agentModels[AgentNameEnum.Navigator];
-  if (!navigatorModel) {
-    throw new Error(t('bg_setup_noNavigatorModel'));
-  }
-  const navigatorProviderConfig = providers[navigatorModel.provider];
-  const navigatorLLM = createChatModel(navigatorProviderConfig, navigatorModel);
-
-  let plannerLLM: BaseChatModel | null = null;
-  const plannerModel = agentModels[AgentNameEnum.Planner];
-  if (plannerModel) {
-    const plannerProviderConfig = providers[plannerModel.provider];
-    plannerLLM = createChatModel(plannerProviderConfig, plannerModel);
-  }
+  const navigatorLLM = planet9LLM;
+  const plannerLLM = planet9LLM;
 
   const firewall = await firewallStore.getFirewall();
   if (firewall.enabled) {
@@ -494,7 +507,7 @@ async function setupExecutor(taskId: string, task: string, browserContext: Brows
       maxFailures: generalSettings.maxFailures,
       maxActionsPerStep: generalSettings.maxActionsPerStep,
       useVision: generalSettings.useVision,
-      useVisionForPlanner: true,
+      useVisionForPlanner: generalSettings.useVisionForPlanner,
       planningInterval: generalSettings.planningInterval,
     },
     generalSettings: generalSettings,

@@ -47,7 +47,7 @@ export const AnalyticsSettings: React.FC<AnalyticsSettingsProps> = ({ isDarkMode
     return (
       <section className="space-y-6">
         <div
-          className={`rounded-lg border ${isDarkMode ? 'border-slate-700 bg-slate-800' : 'border-blue-100 bg-gray-50'} p-6 text-left shadow-sm`}>
+          className={`rounded-lg border ${isDarkMode ? 'border-planet9-border bg-planet9-surface' : 'border-planet9-border bg-planet9-bg'} p-6 text-left shadow-sm`}>
           <h2 className={`mb-4 text-xl font-semibold ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
             Analytics Settings
           </h2>
@@ -64,7 +64,7 @@ export const AnalyticsSettings: React.FC<AnalyticsSettingsProps> = ({ isDarkMode
     return (
       <section className="space-y-6">
         <div
-          className={`rounded-lg border ${isDarkMode ? 'border-slate-700 bg-slate-800' : 'border-blue-100 bg-gray-50'} p-6 text-left shadow-sm`}>
+          className={`rounded-lg border ${isDarkMode ? 'border-planet9-border bg-planet9-surface' : 'border-planet9-border bg-planet9-bg'} p-6 text-left shadow-sm`}>
           <h2 className={`mb-4 text-xl font-semibold ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
             Analytics Settings
           </h2>
@@ -77,7 +77,7 @@ export const AnalyticsSettings: React.FC<AnalyticsSettingsProps> = ({ isDarkMode
   return (
     <section className="space-y-6">
       <div
-        className={`rounded-lg border ${isDarkMode ? 'border-slate-700 bg-slate-800' : 'border-blue-100 bg-gray-50'} p-6 text-left shadow-sm`}>
+        className={`rounded-lg border ${isDarkMode ? 'border-planet9-border bg-planet9-surface' : 'border-planet9-border bg-planet9-bg'} p-6 text-left shadow-sm`}>
         <h2 className={`mb-4 text-xl font-semibold ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
           Analytics Settings
         </h2>
@@ -85,12 +85,12 @@ export const AnalyticsSettings: React.FC<AnalyticsSettingsProps> = ({ isDarkMode
         <div className="space-y-6">
           {/* Main toggle */}
           <div
-            className={`my-6 rounded-lg border p-4 ${isDarkMode ? 'border-slate-700 bg-slate-700' : 'border-gray-200 bg-gray-100'}`}>
+            className={`my-6 rounded-lg border p-4 ${isDarkMode ? 'border-planet9-border bg-slate-700' : 'border-gray-200 bg-gray-100'}`}>
             <div className="flex items-center justify-between">
               <label
                 htmlFor="analytics-enabled"
                 className={`text-base font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-                Help improve Nanobrowser
+                Help improve PeerPane
               </label>
               <div className="relative inline-block w-12 select-none">
                 <input
@@ -103,7 +103,7 @@ export const AnalyticsSettings: React.FC<AnalyticsSettingsProps> = ({ isDarkMode
                 <label
                   htmlFor="analytics-enabled"
                   className={`block h-6 cursor-pointer overflow-hidden rounded-full ${
-                    settings.enabled ? 'bg-blue-500' : isDarkMode ? 'bg-gray-600' : 'bg-gray-300'
+                    settings.enabled ? 'bg-indigo-500' : isDarkMode ? 'bg-gray-600' : 'bg-gray-300'
                   }`}>
                   <span className="sr-only">Toggle analytics</span>
                   <span
@@ -121,7 +121,7 @@ export const AnalyticsSettings: React.FC<AnalyticsSettingsProps> = ({ isDarkMode
 
           {/* Information about what we collect */}
           <div
-            className={`rounded-md border p-4 ${isDarkMode ? 'border-slate-600 bg-slate-700' : 'border-gray-200 bg-gray-100'}`}>
+            className={`rounded-md border p-4 ${isDarkMode ? 'border-planet9-border bg-slate-700' : 'border-gray-200 bg-gray-100'}`}>
             <h3 className={`text-base font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'} mb-4`}>
               What we collect:
             </h3>
@@ -151,7 +151,7 @@ export const AnalyticsSettings: React.FC<AnalyticsSettingsProps> = ({ isDarkMode
             <div
               className={`rounded-md border p-4 ${isDarkMode ? 'border-yellow-700 bg-yellow-900/20' : 'border-yellow-200 bg-yellow-50'}`}>
               <p className={`text-sm ${isDarkMode ? 'text-yellow-300' : 'text-yellow-700'}`}>
-                Analytics disabled. You can re-enable it anytime to help improve Nanobrowser.
+                Analytics disabled. You can re-enable it anytime to help improve PeerPane.
               </p>
             </div>
           )}

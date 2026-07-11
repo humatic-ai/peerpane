@@ -14,7 +14,7 @@ export default memo(function MarkdownContent({
   const blocks = splitBlocks(content);
 
   return (
-    <div className={`space-y-2 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+    <div className={`space-y-2 text-sm ${isDarkMode ? 'text-gray-300' : 'text-slate-700'}`}>
       {blocks.map((block, i) => (
         <Block key={i} block={block} isDarkMode={isDarkMode} />
       ))}
@@ -112,7 +112,7 @@ function Block({ block, isDarkMode }: { block: Block; isDarkMode: boolean }) {
       const size =
         block.level === 1 ? 'text-base font-bold' : block.level === 2 ? 'text-sm font-bold' : 'text-sm font-semibold';
       return (
-        <Tag className={`${size} ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
+        <Tag className={`${size} ${isDarkMode ? 'text-gray-100' : 'text-slate-800'}`}>
           {renderInline(block.text, isDarkMode)}
         </Tag>
       );
@@ -120,8 +120,8 @@ function Block({ block, isDarkMode }: { block: Block; isDarkMode: boolean }) {
     case 'code':
       return (
         <pre
-          className={`overflow-x-auto rounded-md p-2 text-xs ${
-            isDarkMode ? 'bg-slate-800 text-sky-200' : 'bg-slate-100 text-slate-800'
+          className={`overflow-x-auto rounded-xl border border-planet9-border p-3 font-mono text-xs ${
+            isDarkMode ? 'bg-planet9-surface text-indigo-200' : 'bg-gray-50 text-gray-800'
           }`}>
           <code>{block.text}</code>
         </pre>
@@ -152,7 +152,7 @@ function renderInline(text: string, isDarkMode: boolean): ReactNode[] {
       return (
         <code
           key={i}
-          className={`rounded px-1 py-0.5 text-xs ${isDarkMode ? 'bg-slate-700 text-sky-200' : 'bg-slate-100 text-slate-800'}`}>
+          className={`rounded px-1 py-0.5 font-mono text-xs ${isDarkMode ? 'bg-slate-700 text-indigo-200' : 'bg-gray-100 text-indigo-600'}`}>
           {part.slice(1, -1)}
         </code>
       );
@@ -174,7 +174,7 @@ function renderInline(text: string, isDarkMode: boolean): ReactNode[] {
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className={`underline ${isDarkMode ? 'text-sky-400' : 'text-sky-600'}`}>
+            className={`underline ${isDarkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>
             {linkMatch[1]}
           </a>
         );

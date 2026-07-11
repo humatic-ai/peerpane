@@ -7,21 +7,17 @@ type I18nValue = {
 };
 
 function translate(key: MessageKey, substitutions?: string | string[]) {
-  const value = getMessageFromLocale(t.devLocale)[key] as I18nValue;
+  const locale = (t.devLocale || defaultLocale) as DevLocale;
+  const catalog = getMessageFromLocale(locale);
+  const value = catalog[key] as I18nValue | undefined;
+  if (!value?.message) {
+    return key;
+  }
   let message = value.message;
-  /**
-   * This is a placeholder replacement logic. But it's not perfect.
-   * It just imitates the behavior of the Chrome extension i18n API.
-   * Please check the official document for more information And double-check the behavior on production build.
-   *
-   * @url https://developer.chrome.com/docs/extensions/how-to/ui/localization-message-formats#placeholders
-   */
   if (value.placeholders) {
-    Object.entries(value.placeholders).forEach(([key, { content }]) => {
-      if (!content) {
-        return;
-      }
-      message = message.replace(new RegExp(`\\$${key}\\$`, 'gi'), content);
+    Object.entries(value.placeholders).forEach(([placeholderKey, { content }]) => {
+      if (!content) return;
+      message = message.replace(new RegExp(`\\$${placeholderKey}\\$`, 'gi'), content);
     });
   }
   if (!substitutions) {
@@ -42,3 +38,7 @@ export const t = (...args: Parameters<typeof translate>) => {
 };
 
 t.devLocale = defaultLocale as DevLocale;
+
+export function setActiveLocale(locale: DevLocale) {
+  t.devLocale = locale;
+}

@@ -35,12 +35,12 @@ const ChatHistoryList: React.FC<ChatHistoryListProps> = ({
 
   return (
     <div className="h-full overflow-y-auto p-4">
-      <h2 className={`mb-4 text-lg font-semibold ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+      <h2 className={`mb-4 text-lg font-semibold ${isDarkMode ? 'text-gray-200' : 'text-slate-800'}`}>
         {t('chat_history_title')}
       </h2>
       {sessions.length === 0 ? (
         <div
-          className={`rounded-lg ${isDarkMode ? 'bg-slate-800 text-gray-400' : 'bg-white/30 text-gray-500'} p-4 text-center backdrop-blur-sm`}>
+          className={`rounded-xl border border-planet9-border p-4 text-center ${isDarkMode ? 'bg-planet9-surface text-gray-400' : 'bg-planet9-bg text-slate-500'}`}>
           {t('chat_history_empty')}
         </div>
       ) : (
@@ -48,14 +48,14 @@ const ChatHistoryList: React.FC<ChatHistoryListProps> = ({
           {sessions.map(session => (
             <div
               key={session.id}
-              className={`group relative rounded-lg ${
-                isDarkMode ? 'bg-slate-800 hover:bg-slate-700' : 'bg-white/50 hover:bg-white/70'
-              } p-3 backdrop-blur-sm transition-all`}>
+              className={`group relative rounded-xl border border-planet9-border p-3 transition-all ${
+                isDarkMode ? 'bg-planet9-surface hover:bg-slate-700' : 'bg-white hover:bg-slate-50'
+              }`}>
               <button onClick={() => onSessionSelect(session.id)} className="w-full text-left" type="button">
-                <h3 className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
+                <h3 className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-slate-800'}`}>
                   {session.title}
                 </h3>
-                <p className={`mt-1 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                <p className={`mt-1 text-xs ${isDarkMode ? 'text-gray-400' : 'text-slate-500'}`}>
                   {formatDate(session.createdAt)}
                 </p>
               </button>
@@ -69,8 +69,8 @@ const ChatHistoryList: React.FC<ChatHistoryListProps> = ({
                   }}
                   className={`absolute right-2 top-2 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 ${
                     isDarkMode
-                      ? 'bg-slate-700 text-sky-400 hover:bg-slate-600'
-                      : 'bg-white text-sky-500 hover:bg-gray-100'
+                      ? 'bg-slate-700 text-indigo-400 hover:bg-slate-600'
+                      : 'bg-white text-indigo-600 hover:bg-indigo-50'
                   }`}
                   aria-label={t('chat_history_bookmark')}
                   type="button">
@@ -87,7 +87,7 @@ const ChatHistoryList: React.FC<ChatHistoryListProps> = ({
                 className={`absolute bottom-2 right-2 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 ${
                   isDarkMode
                     ? 'bg-slate-700 text-gray-400 hover:bg-slate-600'
-                    : 'bg-white text-gray-500 hover:bg-gray-100'
+                    : 'bg-white text-slate-500 hover:bg-slate-100'
                 }`}
                 aria-label={t('chat_history_delete')}
                 type="button">

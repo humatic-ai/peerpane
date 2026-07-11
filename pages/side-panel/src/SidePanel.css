@@ -1,73 +1,37 @@
-/* Add this at the top of the file */
-body {
-  border-color: rgb(159, 6, 11) !important; /* sky-200 color */
-}
-
-/* Remove unused classes: .App, .App-logo, .App-header */
-
 code {
-  background: rgba(186, 230, 253, 0.4);
+  background: #f3f4f6;
   border-radius: 0.25rem;
   padding: 0.2rem 0.5rem;
-  color: #0369a1;
+  color: #6366f1;
+  font-family: 'Fira Code', 'JetBrains Mono', 'SF Mono', Monaco, Consolas, monospace;
 }
 
-/* Dark mode support for code */
-@media (prefers-color-scheme: dark) {
-  code {
-    background: rgba(30, 58, 138, 0.4);
-    color: #7dd3fc;
-  }
-}
-
-/* Scrollbar styles */
+/* Scrollbar styles — Planet 9 light */
 ::-webkit-scrollbar {
   width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #0ea5e9;
+  background: #cbd5e1;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #0284c7;
+  background: #94a3b8;
 }
 
-/* Dark mode scrollbar */
-@media (prefers-color-scheme: dark) {
-  ::-webkit-scrollbar-track {
-    background: #1e293b;
-  }
-  
-  ::-webkit-scrollbar-thumb {
-    background: #0ea5e9;
-  }
-  
-  ::-webkit-scrollbar-thumb:hover {
-    background: #38bdf8;
-  }
-}
-
-/* Used classes from the component */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  min-height: 51px;
   padding: 0.75rem;
   background-color: transparent;
-  border-bottom: 1px solid rgba(14, 165, 233, 0.2);
-}
-
-/* Dark mode header border */
-@media (prefers-color-scheme: dark) {
-  .header {
-    border-bottom: 1px solid rgba(14, 165, 233, 0.3);
-  }
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .header-logo {
@@ -77,89 +41,117 @@ code {
 
 .header-icons {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.5rem;
   align-items: center;
 }
 
+/* Voice-app toolbar buttons, ported to Planet 9 light tokens */
+.icon-btn {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.icon-btn:hover {
+  background: rgba(15, 23, 42, 0.04);
+  color: #1e293b;
+}
+
+.icon-btn:active {
+  transform: scale(0.94);
+}
+
+.header--dark .icon-btn {
+  color: #94a3b8;
+}
+
+.header--dark .icon-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #f1f5f9;
+}
+
 .header-icon {
-  color: #19C2FF;
+  color: #64748b;
   cursor: pointer;
   transition: color 0.2s ease;
-  opacity: 0.8;
+  opacity: 0.85;
 }
 
 .header-icon:hover {
-  color: #0073DC;
+  color: #1e293b;
   opacity: 1;
 }
 
+.header--dark {
+  border-bottom-color: #334155;
+}
+
+.header--dark .header-icon {
+  color: #94a3b8;
+}
+
+.header--dark .header-icon:hover {
+  color: #f1f5f9;
+}
+
 .send-button {
-  color: #19C2FF;
+  color: #64748b;
   cursor: pointer;
   transition: color 0.2s ease;
-  opacity: 0.8;
+  opacity: 0.85;
 }
 
 .send-button:hover {
-  color: #0073DC;
+  color: #1e293b;
   opacity: 1;
 }
 
 .send-button:disabled {
-  color: #CBD5E1;
+  color: #94a3b8;
   cursor: not-allowed;
   opacity: 0.5;
 }
 
-/* Add these styles to your existing CSS */
 .scrollbar-gutter-stable {
   scrollbar-gutter: stable;
 }
 
-/* Optional: Style the scrollbar for webkit browsers */
 .scrollbar-gutter-stable::-webkit-scrollbar {
   width: 8px;
 }
 
 .scrollbar-gutter-stable::-webkit-scrollbar-track {
-  background: #f1f5f9;  /* sky-50 */
+  background: transparent;
 }
 
 .scrollbar-gutter-stable::-webkit-scrollbar-thumb {
-  background: #7dd3fc;  /* sky-300 - very light blue */
+  background: #cbd5e1;
   border-radius: 4px;
 }
 
 .scrollbar-gutter-stable::-webkit-scrollbar-thumb:hover {
-  background: #38bdf8;  /* sky-400 - slightly darker on hover */
+  background: #94a3b8;
 }
 
-/* Dark mode scrollbar for scrollbar-gutter-stable */
-@media (prefers-color-scheme: dark) {
-  .scrollbar-gutter-stable::-webkit-scrollbar-track {
-    background: #1e293b;  /* slate-800 */
-  }
-  
-  .scrollbar-gutter-stable::-webkit-scrollbar-thumb {
-    background: #0ea5e9;  /* sky-500 */
-  }
-  
-  .scrollbar-gutter-stable::-webkit-scrollbar-thumb:hover {
-    background: #38bdf8;  /* sky-400 */
-  }
+.dark-mode-text {
+  color: #e2e8f0 !important;
 }
 
-/* Dark mode text and background colors */
-@media (prefers-color-scheme: dark) {
-  .dark-mode-text {
-    color: #e2e8f0 !important; /* slate-200 */
-  }
-  
-  .dark-mode-bg {
-    background-color: #1e293b !important; /* slate-800 */
-  }
-  
-  .dark-mode-border {
-    border-color: #475569 !important; /* slate-600 */
-  }
+.dark-mode-bg {
+  background-color: #0e1118 !important;
+}
+
+.dark-mode-border {
+  border-color: #20232b !important;
 }

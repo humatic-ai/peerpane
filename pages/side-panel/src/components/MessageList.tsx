@@ -11,12 +11,11 @@ interface MessageListProps {
 
 export default memo(function MessageList({ messages, isDarkMode = false }: MessageListProps) {
   return (
-    <div className="max-w-full space-y-4">
+    <div className="flex max-w-full flex-col gap-2.5">
       {messages.map((message, index) => (
         <MessageBlock
           key={`${message.actor}-${message.timestamp}-${index}`}
           message={message}
-          isSameActor={index > 0 ? messages[index - 1].actor === message.actor : false}
           isDarkMode={isDarkMode}
         />
       ))}
@@ -26,11 +25,16 @@ export default memo(function MessageList({ messages, isDarkMode = false }: Messa
 
 interface MessageBlockProps {
   message: Message;
-  isSameActor: boolean;
   isDarkMode?: boolean;
 }
 
-function MessageBlock({ message, isSameActor, isDarkMode = false }: MessageBlockProps) {
+function roleColor(actor: string, isDarkMode: boolean): string {
+  if (actor === Actors.USER) return isDarkMode ? 'text-indigo-300' : 'text-indigo-500';
+  if (actor === Actors.ASSISTANT) return isDarkMode ? 'text-purple-300' : 'text-[#764ba2]';
+  return isDarkMode ? 'text-gray-500' : 'text-slate-400';
+}
+
+function MessageBlock({ message, isDarkMode = false }: MessageBlockProps) {
   if (!message.actor) {
     console.error('No actor found');
     return <div />;
@@ -40,81 +44,36 @@ function MessageBlock({ message, isSameActor, isDarkMode = false }: MessageBlock
     console.error('Unknown actor', message.actor);
     return <div />;
   }
+
   const isProgress = message.content === 'Showing progress...';
   const useMarkdown = message.actor === Actors.ASSISTANT && !isProgress;
+  const isUser = message.actor === Actors.USER;
 
   return (
-    <div
-      className={`flex max-w-full gap-3 ${
-        !isSameActor
-          ? `mt-4 border-t ${isDarkMode ? 'border-sky-800/50' : 'border-sky-200/50'} pt-4 first:mt-0 first:border-t-0 first:pt-0`
-          : ''
-      }`}>
-      {!isSameActor && (
-        <div
-          className="flex size-8 shrink-0 items-center justify-center rounded-full"
-          style={{ backgroundColor: actor.iconBackground }}>
-          <img src={actor.icon} alt={actor.name} className="size-6 rounded-full object-cover" />
+    <div className={`flex max-w-[88%] flex-col gap-[3px] ${isUser ? 'items-start self-start' : 'items-end self-end'}`}>
+      <span
+        className={`px-0.5 font-mono text-[10px] font-medium uppercase tracking-[0.1em] ${roleColor(message.actor, isDarkMode)}`}>
+        {actor.name}
+      </span>
+
+      {isProgress ? (
+        <div className={`h-1 w-40 overflow-hidden rounded ${isDarkMode ? 'bg-slate-700' : 'bg-slate-200'}`}>
+          <div className="h-full animate-progress bg-indigo-500" />
         </div>
-      )}
-      {isSameActor && <div className="w-8" />}
-
-      <div className="min-w-0 flex-1">
-        {!isSameActor && (
-          <div className={`mb-1 text-sm font-semibold ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
-            {actor.name}
-          </div>
-        )}
-
-        <div className="space-y-0.5">
-          {isProgress ? (
-            <div className={`h-1 overflow-hidden rounded ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
-              <div className="h-full animate-progress bg-blue-500" />
-            </div>
-          ) : useMarkdown ? (
+      ) : (
+        <div
+          className={`break-words rounded-xl border px-3 py-2 text-[13px] leading-[1.5] ${
+            isDarkMode
+              ? 'border-slate-700 bg-slate-800 text-gray-200'
+              : 'border-planet9-border bg-planet9-tertiary text-slate-800'
+          }`}>
+          {useMarkdown ? (
             <MarkdownContent content={message.content} isDarkMode={isDarkMode} />
           ) : (
-            <div
-              className={`whitespace-pre-wrap break-words text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              {message.content}
-            </div>
-          )}
-          {!isProgress && (
-            <div className={`text-right text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-300'}`}>
-              {formatTimestamp(message.timestamp)}
-            </div>
+            <span className="whitespace-pre-wrap">{message.content}</span>
           )}
         </div>
-      </div>
+      )}
     </div>
   );
-}
-
-function formatTimestamp(timestamp: number): string {
-  const date = new Date(timestamp);
-  const now = new Date();
-
-  const isToday = date.toDateString() === now.toDateString();
-
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const isYesterday = date.toDateString() === yesterday.toDateString();
-
-  const isThisYear = date.getFullYear() === now.getFullYear();
-
-  const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-  if (isToday) {
-    return timeStr;
-  }
-
-  if (isYesterday) {
-    return `Yesterday, ${timeStr}`;
-  }
-
-  if (isThisYear) {
-    return `${date.toLocaleDateString([], { month: 'short', day: 'numeric' })}, ${timeStr}`;
-  }
-
-  return `${date.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' })}, ${timeStr}`;
 }

@@ -6,3 +6,5 @@ export * from './firewall';
 export * from './speechToText';
 export * from './analyticsSettings';
 export * from './humaticai';
+export * from './themeSettings';
+export * from './localeSettings';

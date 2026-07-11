@@ -1,7 +1,7 @@
 {
   "app_metadata_description": {
     "description": "Descrição da extensão",
-    "message": "PeerPane by Humatic AI — chat with your Digital Peer from any web page. Attach the current page as context."
+    "message": "PeerPane — connects to Planet 9 to chat with your Digital Peer from any web page. Attach the current page as context."
   },
   "app_metadata_name": {
     "description": "Nome da extensão",
@@ -31,6 +31,24 @@
   "nav_settings_a11y": {
     "message": "Configurações"
   },
+  "nav_settings": {
+    "message": "Configurações"
+  },
+  "nav_menu_a11y": {
+    "message": "Mais opções"
+  },
+  "theme_label": {
+    "message": "Tema"
+  },
+  "theme_light": {
+    "message": "Claro"
+  },
+  "theme_dark": {
+    "message": "Escuro"
+  },
+  "theme_system": {
+    "message": "Sistema"
+  },
   "nav_back": {
     "message": "← Voltar"
   },
@@ -41,13 +59,13 @@
     "message": "Welcome to PeerPane"
   },
   "welcome_instruction": {
-    "message": "To get started, enter your Humatic AI API key in Settings."
+    "message": "To get started, enter your Planet 9 API key in Settings."
   },
   "welcome_openSettings": {
     "message": "Abrir Configurações"
   },
   "welcome_quickStart": {
-    "message": "Visit Humatic AI"
+    "message": "Visit Planet 9"
   },
   "welcome_joinCommunity": {
     "message": "Junte-se à Nossa Comunidade"
@@ -197,7 +215,13 @@
     "message": "Permissão Já Concedida"
   },
   "options_nav_header": {
-    "message": "PeerPane Settings"
+    "message": "Configurações"
+  },
+  "options_section_configuration": {
+    "message": "Configuração"
+  },
+  "options_section_support": {
+    "message": "Suporte"
   },
   "options_tabs_general": {
     "message": "Geral"
@@ -213,6 +237,42 @@
   },
   "options_general_header": {
     "message": "Geral"
+  },
+  "options_general_scope_note": {
+    "message": "As configurações do agente de navegador valem quando o Agente de Navegador está ativo (Executor Nanobrowser). O chat Planet 9 usa apenas Conexão."
+  },
+  "options_general_section_toggles": {
+    "message": "Recursos"
+  },
+  "options_general_section_advanced": {
+    "message": "Avançado"
+  },
+  "options_general_section_preferences": {
+    "message": "Preferências"
+  },
+  "options_general_useBrowserAgent": {
+    "message": "Agente de Navegador"
+  },
+  "options_general_useBrowserAgent_desc": {
+    "message": "Executa automação de página via Executor Nanobrowser (Destacar elementos, Visão, Max Steps, etc.). Configure Modelos primeiro. Quando desligado, o painel usa o chat Planet 9."
+  },
+  "options_general_language": {
+    "message": "Idioma"
+  },
+  "options_general_language_desc": {
+    "message": "Idioma da interface do PeerPane (configurações e painel lateral). A página recarrega após a alteração."
+  },
+  "options_general_language_system": {
+    "message": "Padrão do sistema"
+  },
+  "options_general_language_en": {
+    "message": "English"
+  },
+  "options_general_language_pt_BR": {
+    "message": "Português (Brasil)"
+  },
+  "options_general_language_zh_TW": {
+    "message": "繁體中文"
   },
   "options_general_maxSteps": {
     "message": "Máximo de Passos por Tarefa"
@@ -237,6 +297,12 @@
   },
   "options_general_enableVision_desc": {
     "message": "Usar capacidade de visão dos modelos de linguagem (consome mais tokens para melhores resultados)"
+  },
+  "options_general_enableVisionForPlanner": {
+    "message": "Ativar visão no planejador"
+  },
+  "options_general_enableVisionForPlanner_desc": {
+    "message": "Incluir capturas de tela da página quando o planejador decide os próximos passos"
   },
   "options_general_displayHighlights": {
     "message": "Mostrar Destaques"
@@ -961,19 +1027,19 @@
     }
   },
   "options_tabs_humaticai": {
-    "message": "Humatic AI"
+    "message": "Planet 9"
   },
   "options_humaticai_header": {
-    "message": "Humatic AI Connection"
+    "message": "Planet 9 Connection"
   },
   "options_humaticai_desc": {
-    "message": "Connect PeerPane to your Humatic AI agent using an API key from your agent settings."
+    "message": "Connect PeerPane to your Planet 9 Peer using an API key from your Peer settings."
   },
   "options_humaticai_apiKey": {
     "message": "API Key"
   },
   "options_humaticai_apiKey_desc": {
-    "message": "Your Humatic AI X-API-Key. Stored locally in the browser."
+    "message": "Your Planet 9 API key. Stored locally in the browser."
   },
   "options_humaticai_baseUrl": {
     "message": "API Base URL"
@@ -988,16 +1054,19 @@
     "message": "Model override"
   },
   "options_humaticai_optional": {
-    "message": "Optional — leave blank for agent default"
+    "message": "Optional — leave blank for Peer default"
   },
   "options_humaticai_useRag": {
     "message": "Use knowledge base (RAG)"
   },
   "options_humaticai_useRag_desc": {
-    "message": "Search your agent knowledge base when answering"
+    "message": "Search your Planet 9 knowledge base when answering"
   },
   "options_humaticai_test": {
     "message": "Test connection"
+  },
+  "options_humaticai_reset": {
+    "message": "Redefinir"
   },
   "options_humaticai_testing": {
     "message": "Testing…"

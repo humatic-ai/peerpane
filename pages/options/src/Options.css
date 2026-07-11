@@ -1,7 +1,9 @@
 #app-container {
-  text-align: center;
+  text-align: left;
   width: 100vw;
   height: 100vh;
+  background-color: #ffffff;
+  color: #1e293b;
 }
 
 .App-logo {
@@ -20,27 +22,42 @@
 }
 
 code {
-  background: rgba(148, 163, 184, 0.5);
+  background: #f3f4f6;
   border-radius: 0.25rem;
   padding: 0.2rem 0.5rem;
+  color: #6366f1;
+  font-family: 'Fira Code', 'JetBrains Mono', 'SF Mono', Monaco, Consolas, monospace;
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  code {
-    background: rgba(30, 58, 138, 0.4);
-    color: #7dd3fc;
-  }
-  
-  .dark-mode-text {
-    color: #e2e8f0 !important; /* slate-200 */
-  }
-  
-  .dark-mode-bg {
-    background-color: #1e293b !important; /* slate-800 */
-  }
-  
-  .dark-mode-border {
-    border-color: #475569 !important; /* slate-600 */
-  }
+.dark-mode-text {
+  color: #e2e8f0 !important;
+}
+
+.dark-mode-bg {
+  background-color: #0e1118 !important;
+}
+
+.dark-mode-border {
+  border-color: #20232b !important;
+}
+
+/* Planet 9 sidebar header band — mirrors ragchat .planet9-sidebar-header */
+.planet9-sidebar-header {
+  background-color: #07080a;
+  background-image:
+    radial-gradient(120% 80% at 100% 50%, rgba(60, 78, 110, 0.22) 0%, transparent 55%),
+    radial-gradient(1px 1px at 18% 22%, rgba(255, 255, 255, 0.55), transparent 100%),
+    radial-gradient(1px 1px at 72% 18%, rgba(255, 255, 255, 0.4), transparent 100%),
+    radial-gradient(1px 1px at 38% 78%, rgba(255, 255, 255, 0.45), transparent 100%),
+    linear-gradient(180deg, #06070a 0%, #0a0c11 55%, #0e1118 100%);
+  isolation: isolate;
+}
+
+.planet9-wordmark {
+  background: linear-gradient(180deg, #f6f8fa 0%, #c4c8ce 25%, #7a7d83 50%, #b4b8be 75%, #ffffff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
 }

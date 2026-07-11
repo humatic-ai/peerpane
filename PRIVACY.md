@@ -1,53 +1,81 @@
-# Privacy Policy for Nanobrowser
+# Privacy Policy for PeerPane
+
+**Product:** Humatic AI PeerPane Browser Extension  
+**Operator:** HumaticAI  
+**Public URL:** https://humaticai.com/privacy#peerpane  
+
+Last updated: July 11, 2026
 
 ## Introduction
 
-[Nanobrowser](https://github.com/nanobrowser/nanobrowser) is an open-source AI web automation Chrome extension. This Privacy Policy explains how we handle your data and protect your privacy.
+PeerPane is an open-source Chrome extension that lets you chat with your [Planet 9](https://humaticai.com/planet9) Digital Peer from any web page. This policy explains what data the extension handles and how it is used.
 
-## Open Source
+PeerPane is licensed under Apache License 2.0. Source code is available in the PeerPane repository. PeerPane is a fork of Nanobrowser; Nanobrowser trademarks are not used as product branding here.
 
-Nanobrowser is licensed under Apache License 2.0. All source code is publicly available in our [GitHub repository](https://github.com/nanobrowser/nanobrowser), ensuring complete transparency.
+## What PeerPane does
 
-## Data Collection and Processing
+- You connect PeerPane to **Planet 9** with your own API key.
+- Chat messages stream to your configured Planet 9 endpoint (default: `https://humaticai.com/ragchat`).
+- Optionally, you can **attach the current page** (screenshot and page text) so your Peer can use that context.
+- Chat history, settings, and your API key are stored **locally** in the browser (Chrome extension storage).
 
-### Local Processing
-- Nanobrowser operates entirely within your browser
-- Login credentials and cookies never leave your browser
-- All user data is processed locally by default
+## Data we process
 
-### Anonymous Analytics (Optional)
-**Analytics is enabled by default but can be disabled anytime** in extension settings.
+### Stored on your device
+- Planet 9 API key and base URL (you enter these in Settings)
+- Chat history and thread IDs for continuity
+- Extension preferences (including analytics on/off)
+- An anonymous analytics ID (if analytics is enabled)
 
-**We collect only:**
-- Task metrics (execution times, error categories)
-- Domain names visited (e.g., "amazon.com" - not full URLs)
-- Anonymous usage statistics
-- Anonymous user identifier (randomly generated)
+We do not require a PeerPane account separate from your Planet 9 API key.
 
-**We never collect:**
-- Personal information, credentials, or authentication data
-- Full URLs, page content, screenshots, or task instructions
-- Any personally identifiable information
+### Sent to Planet 9 (when you use chat)
+When you send a message, PeerPane transmits:
+- Your message text
+- Your API key (as `X-API-Key` authentication)
+- Thread identifiers needed for conversation continuity
+- If you enable “Attach current page”: a screenshot and/or extracted page text, plus page URL/title as needed for context
 
-Analytics data is processed by PostHog and used solely to improve the extension. Data is anonymized and never sold or shared with advertisers.
+That data is processed under HumaticAI’s Planet 9 / website practices described at https://humaticai.com/privacy, and any terms that apply to your Planet 9 tenant.
 
-### LLM Provider Interactions
-When using AI features, web page data (screenshots and HTML) is sent directly to your chosen LLM provider. This is necessary for AI functionality. Your data privacy is subject to your LLM provider's policies.
+### Optional anonymous analytics
+Analytics is **on by default** and can be turned **off** in extension settings.
 
-## API Keys
-- You provide your own API keys for LLM providers
-- Keys are stored locally in your browser only
-- You manage key security per provider terms
+When enabled and a PostHog key is configured in the build, PeerPane may send:
+- Anonymous usage events (e.g. task timing, error categories)
+- Domain names of pages you interact with in automation-related flows (hostname only — not full URLs with paths/queries in analytics payloads)
+- A randomly generated anonymous user ID
 
-## User Control
-- Clear conversation history and settings anytime
-- **Enable/disable analytics** through extension options
-- Uninstall extension to remove all local data
+Analytics does **not** intentionally collect:
+- Your Planet 9 API key
+- Full page content or screenshots
+- Personal contact details you type into chat (chat content goes to Planet 9, not to analytics as message bodies)
 
-## Changes to This Privacy Policy
-We may update this policy periodically. Please review it regularly for changes.
+Analytics, when used, is processed by PostHog solely to improve the extension. Data is not sold to advertisers.
+
+## What we do not do
+
+- We do not sell your personal data.
+- We do not use attached page content for advertising.
+- We do not claim that PeerPane “runs entirely offline” for AI chat — chat and optional page attach require network access to Planet 9.
+
+## Your controls
+
+- Clear chat history and change settings anytime in the extension
+- Disable analytics in extension settings
+- Remove your API key from Settings
+- Uninstall PeerPane to remove local extension storage (subject to Chrome’s uninstall behavior)
+
+## Children’s privacy
+
+PeerPane is not directed to children under 16. Do not use the extension if you are under 16.
+
+## Changes
+
+We may update this policy. Material changes will be reflected on https://humaticai.com/privacy#peerpane and in this file’s “Last updated” date.
 
 ## Contact
-Questions or concerns? Contact us at cws@felight.xyz
 
-Last Updated: August 30, 2025
+Email: ceo@humaticai.com  
+
+HumaticAI

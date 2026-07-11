@@ -1,7 +1,7 @@
 {
   "app_metadata_description": {
     "description": "Extension description",
-    "message": "PeerPane by Humatic AI — chat with your Digital Peer from any web page. Attach the current page as context."
+    "message": "PeerPane — connects to Planet 9 to chat with your Digital Peer from any web page. Attach the current page as context."
   },
   "app_metadata_name": {
     "description": "Extension name",
@@ -31,6 +31,24 @@
   "nav_settings_a11y": {
     "message": "設定"
   },
+  "nav_settings": {
+    "message": "設定"
+  },
+  "nav_menu_a11y": {
+    "message": "更多選項"
+  },
+  "theme_label": {
+    "message": "主題"
+  },
+  "theme_light": {
+    "message": "淺色"
+  },
+  "theme_dark": {
+    "message": "深色"
+  },
+  "theme_system": {
+    "message": "系統"
+  },
   "nav_back": {
     "message": "← 返回"
   },
@@ -41,13 +59,13 @@
     "message": "Welcome to PeerPane"
   },
   "welcome_instruction": {
-    "message": "To get started, enter your Humatic AI API key in Settings."
+    "message": "To get started, enter your Planet 9 API key in Settings."
   },
   "welcome_openSettings": {
     "message": "開啟設定"
   },
   "welcome_quickStart": {
-    "message": "Visit Humatic AI"
+    "message": "Visit Planet 9"
   },
   "welcome_joinCommunity": {
     "message": "加入我們的社群"
@@ -197,7 +215,13 @@
     "message": "已授予權限"
   },
   "options_nav_header": {
-    "message": "PeerPane Settings"
+    "message": "設定"
+  },
+  "options_section_configuration": {
+    "message": "設定選項"
+  },
+  "options_section_support": {
+    "message": "支援"
   },
   "options_tabs_general": {
     "message": "一般"
@@ -213,6 +237,42 @@
   },
   "options_general_header": {
     "message": "一般"
+  },
+  "options_general_scope_note": {
+    "message": "啟用「瀏覽器代理」時，這些設定才會套用到 Nanobrowser Executor。Planet 9 聊天僅使用連線設定。"
+  },
+  "options_general_section_toggles": {
+    "message": "功能開關"
+  },
+  "options_general_section_advanced": {
+    "message": "進階"
+  },
+  "options_general_section_preferences": {
+    "message": "偏好設定"
+  },
+  "options_general_useBrowserAgent": {
+    "message": "瀏覽器代理"
+  },
+  "options_general_useBrowserAgent_desc": {
+    "message": "透過 Nanobrowser Executor 執行頁面自動化（顯示醒目提示、視覺、最大步驟等）。請先設定 Models。關閉時側邊欄使用 Planet 9 聊天。"
+  },
+  "options_general_language": {
+    "message": "語言"
+  },
+  "options_general_language_desc": {
+    "message": "PeerPane 設定頁與側邊欄的介面語言。變更後會重新載入。"
+  },
+  "options_general_language_system": {
+    "message": "系統預設"
+  },
+  "options_general_language_en": {
+    "message": "English"
+  },
+  "options_general_language_pt_BR": {
+    "message": "Português (Brasil)"
+  },
+  "options_general_language_zh_TW": {
+    "message": "繁體中文"
   },
   "options_general_maxSteps": {
     "message": "單一任務的步驟上限"
@@ -237,6 +297,12 @@
   },
   "options_general_enableVision_desc": {
     "message": "使用大型語言模型的視覺能力 (將會消耗更多的 token 以取得更好的結果)"
+  },
+  "options_general_enableVisionForPlanner": {
+    "message": "為規劃器啟用視覺"
+  },
+  "options_general_enableVisionForPlanner_desc": {
+    "message": "規劃器決定下一步時包含頁面截圖"
   },
   "options_general_displayHighlights": {
     "message": "顯示醒目標示"
@@ -961,19 +1027,19 @@
     }
   },
   "options_tabs_humaticai": {
-    "message": "Humatic AI"
+    "message": "Planet 9"
   },
   "options_humaticai_header": {
-    "message": "Humatic AI Connection"
+    "message": "Planet 9 Connection"
   },
   "options_humaticai_desc": {
-    "message": "Connect PeerPane to your Humatic AI agent using an API key from your agent settings."
+    "message": "Connect PeerPane to your Planet 9 Peer using an API key from your Peer settings."
   },
   "options_humaticai_apiKey": {
     "message": "API Key"
   },
   "options_humaticai_apiKey_desc": {
-    "message": "Your Humatic AI X-API-Key. Stored locally in the browser."
+    "message": "Your Planet 9 API key. Stored locally in the browser."
   },
   "options_humaticai_baseUrl": {
     "message": "API Base URL"
@@ -988,16 +1054,19 @@
     "message": "Model override"
   },
   "options_humaticai_optional": {
-    "message": "Optional — leave blank for agent default"
+    "message": "Optional — leave blank for Peer default"
   },
   "options_humaticai_useRag": {
     "message": "Use knowledge base (RAG)"
   },
   "options_humaticai_useRag_desc": {
-    "message": "Search your agent knowledge base when answering"
+    "message": "Search your Planet 9 knowledge base when answering"
   },
   "options_humaticai_test": {
     "message": "Test connection"
+  },
+  "options_humaticai_reset": {
+    "message": "重設"
   },
   "options_humaticai_testing": {
     "message": "Testing…"

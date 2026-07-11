@@ -15,10 +15,24 @@ export interface StreamChatParams {
   userId: string;
   threadId?: string;
   images?: HumaticAIImage[];
-  provider?: string;
-  model?: string;
-  useRag?: boolean;
   signal?: AbortSignal;
+}
+
+export interface TranscribeAudioParams {
+  baseUrl: string;
+  apiKey: string;
+  /** Raw audio bytes (Blob or ArrayBuffer). */
+  audio: Blob | ArrayBuffer;
+  /** MIME type without codec suffix, e.g. audio/webm */
+  mimeType?: string;
+  language?: string;
+  signal?: AbortSignal;
+}
+
+export interface TranscribeAudioResult {
+  text: string;
+  language?: string;
+  duration?: number;
 }
 
 export interface HumaticAISuggestion {
@@ -59,7 +73,6 @@ export async function streamChat(
   const body: Record<string, unknown> = {
     message: params.message ?? '',
     user_id: params.userId,
-    use_rag: params.useRag ?? true,
   };
   if (params.threadId) {
     body.thread_id = params.threadId;
@@ -69,12 +82,6 @@ export async function streamChat(
       data: img.data,
       mime_type: img.mime_type || 'image/png',
     }));
-  }
-  if (params.provider) {
-    body.provider = params.provider;
-  }
-  if (params.model) {
-    body.model = params.model;
   }
 
   let response: Response;
@@ -171,7 +178,11 @@ export async function streamChat(
           onEvent({ type: 'content', content: frame.content });
         }
 
-        if (frame.new_message) {
+        // Both frames are sub-turn boundaries: `message_complete` finalizes the
+        // current bubble (emitted before a tool runs), `new_message` starts a new
+        // one. In our model, finalize-and-lazy-recreate handles both; consumers
+        // de-dupe consecutive boundaries.
+        if (frame.message_complete || frame.new_message) {
           onEvent({ type: 'new_message' });
         }
 
@@ -239,4 +250,49 @@ export async function testConnection(
       message: err instanceof Error ? err.message : 'Connection failed',
     };
   }
+}
+
+/**
+ * Speech → text via Planet 9 public STT (`POST /voice/transcribe`).
+ * Raw audio body + Content-Type MIME; returns OpenAI-Whisper-compatible JSON.
+ */
+export async function transcribeAudio(params: TranscribeAudioParams): Promise<TranscribeAudioResult> {
+  const baseUrl = normalizeBaseUrl(params.baseUrl);
+  if (!params.apiKey?.trim()) {
+    throw new Error('Humatic AI API key is not configured');
+  }
+
+  const mimeType = (params.mimeType || 'audio/webm').split(';', 1)[0].trim().toLowerCase() || 'audio/webm';
+  const url = new URL(`${baseUrl}/voice/transcribe`);
+  if (params.language) {
+    url.searchParams.set('language', params.language);
+  }
+
+  const response = await fetch(url.toString(), {
+    method: 'POST',
+    headers: {
+      'Content-Type': mimeType,
+      'X-API-Key': params.apiKey,
+    },
+    body: params.audio,
+    signal: params.signal,
+  });
+
+  if (!response.ok) {
+    let detail = `HTTP ${response.status}`;
+    try {
+      const errBody = await response.text();
+      if (errBody) detail = `${detail}: ${errBody.slice(0, 300)}`;
+    } catch {
+      // ignore
+    }
+    throw new Error(detail);
+  }
+
+  const data = (await response.json()) as { text?: string; language?: string; duration?: number };
+  return {
+    text: typeof data.text === 'string' ? data.text : '',
+    language: typeof data.language === 'string' ? data.language : undefined,
+    duration: typeof data.duration === 'number' ? data.duration : undefined,
+  };
 }

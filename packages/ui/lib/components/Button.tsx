@@ -3,35 +3,54 @@ import { cn } from '../utils';
 
 export type ButtonProps = {
   theme?: 'light' | 'dark';
-  variant?: 'primary' | 'secondary' | 'danger';
+  /** Planet 9 shadcn-aligned variants */
+  variant?: 'primary' | 'default' | 'secondary' | 'outline' | 'danger' | 'destructive';
+  size?: 'default' | 'sm' | 'lg' | 'icon';
   disabled?: boolean;
 } & ComponentPropsWithoutRef<'button'>;
 
-export function Button({ theme, variant = 'primary', className, disabled, children, ...props }: ButtonProps) {
+export function Button({
+  theme = 'light',
+  variant = 'primary',
+  size = 'default',
+  className,
+  disabled,
+  children,
+  ...props
+}: ButtonProps) {
+  const resolved = variant === 'destructive' ? 'danger' : variant === 'default' ? 'primary' : variant;
+
   return (
     <button
+      type="button"
       className={cn(
-        'py-1 px-4 rounded shadow transition-all',
+        'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all',
+        'cursor-pointer outline-none focus-visible:ring-[3px] focus-visible:ring-indigo-500/50',
+        'disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50',
         {
-          // Primary variant
-          'bg-blue-500 hover:bg-blue-600 text-white hover:scale-105':
-            variant === 'primary' && !disabled && theme !== 'dark',
-          'bg-blue-600 hover:bg-blue-700 text-white hover:scale-105':
-            variant === 'primary' && !disabled && theme === 'dark',
-          'bg-gray-400 text-gray-600 cursor-not-allowed': variant === 'primary' && disabled,
+          'h-9 px-4 py-2': size === 'default',
+          'h-8 gap-1.5 px-3': size === 'sm',
+          'h-10 px-6': size === 'lg',
+          'size-9 p-0': size === 'icon',
+        },
+        {
+          // Planet 9 primary ≈ near-black in light settings UI
+          'bg-gray-900 text-white hover:bg-gray-800': resolved === 'primary' && !disabled && theme === 'light',
+          'bg-gray-100 text-gray-900 hover:bg-white': resolved === 'primary' && !disabled && theme === 'dark',
+          'bg-gray-200 text-gray-500': resolved === 'primary' && disabled,
 
-          // Secondary variant
-          'bg-gray-300 hover:bg-gray-400 text-gray-800 hover:scale-105': variant === 'secondary' && !disabled,
-          'bg-gray-100 text-gray-400 cursor-not-allowed': variant === 'secondary' && disabled,
+          'border border-gray-200 bg-white text-gray-800 shadow-sm hover:bg-gray-50':
+            resolved === 'outline' && !disabled && theme === 'light',
+          'border border-slate-600 bg-transparent text-gray-200 shadow-sm hover:bg-slate-800':
+            resolved === 'outline' && !disabled && theme === 'dark',
+          'border border-gray-100 bg-gray-50 text-gray-400': resolved === 'outline' && disabled,
 
-          // Danger variant
-          // Note: bg-red-400 causes the button to appear black (RGB 0,0,0) for unknown reasons
-          // Using bg-red-500 with opacity to achieve a softer look
-          'bg-red-600 bg-opacity-80 hover:bg-red-700 hover:bg-opacity-90 text-white hover:scale-105':
-            variant === 'danger' && !disabled && theme !== 'dark',
-          'bg-red-500 bg-opacity-70 hover:bg-red-700 hover:bg-opacity-90 text-white hover:scale-105':
-            variant === 'danger' && !disabled && theme === 'dark',
-          'bg-red-300 bg-opacity-80 text-red-100 cursor-not-allowed': variant === 'danger' && disabled,
+          'bg-gray-100 text-gray-800 hover:bg-gray-200': resolved === 'secondary' && !disabled && theme === 'light',
+          'bg-slate-700 text-gray-100 hover:bg-slate-600': resolved === 'secondary' && !disabled && theme === 'dark',
+          'bg-gray-50 text-gray-400': resolved === 'secondary' && disabled,
+
+          'bg-red-600 text-white hover:bg-red-700': resolved === 'danger' && !disabled,
+          'bg-red-300 text-red-100': resolved === 'danger' && disabled,
         },
         className,
       )}

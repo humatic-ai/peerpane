@@ -82,7 +82,7 @@ const BookmarkList: React.FC<BookmarkListProps> = ({
 
   return (
     <div className="p-2">
-      <h3 className={`mb-3 text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+      <h3 className={`mb-3 text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-slate-700'}`}>
         {t('chat_bookmarks_header')}
       </h3>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -94,9 +94,11 @@ const BookmarkList: React.FC<BookmarkListProps> = ({
             onDragEnd={handleDragEnd}
             onDragOver={handleDragOver}
             onDrop={e => handleDrop(e, bookmark.id)}
-            className={`group relative rounded-lg p-3 ${
-              isDarkMode ? 'bg-slate-800 hover:bg-slate-700' : 'bg-white hover:bg-sky-50'
-            } border ${isDarkMode ? 'border-slate-700' : 'border-sky-100'}`}>
+            className={`group relative rounded-xl border p-3 ${
+              isDarkMode
+                ? 'border-planet9-border bg-planet9-surface hover:bg-slate-700'
+                : 'border-planet9-border bg-white hover:bg-slate-50'
+            }`}>
             {editingId === bookmark.id ? (
               <div className="flex items-center">
                 <input
@@ -104,16 +106,18 @@ const BookmarkList: React.FC<BookmarkListProps> = ({
                   type="text"
                   value={editTitle}
                   onChange={e => setEditTitle(e.target.value)}
-                  className={`mr-2 grow rounded px-2 py-1 text-sm ${
-                    isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-sky-100 bg-white text-gray-700'
-                  } border`}
+                  className={`mr-2 grow rounded border px-2 py-1 text-sm ${
+                    isDarkMode
+                      ? 'border-planet9-border bg-slate-700 text-gray-200'
+                      : 'border-planet9-border bg-white text-slate-700'
+                  }`}
                 />
                 <button
                   onClick={() => handleSaveEdit(bookmark.id)}
                   className={`rounded p-1 ${
                     isDarkMode
                       ? 'bg-slate-700 text-green-400 hover:bg-slate-600'
-                      : 'bg-white text-green-500 hover:bg-gray-100'
+                      : 'bg-white text-green-600 hover:bg-slate-100'
                   }`}
                   aria-label={t('chat_bookmarks_saveEdit')}
                   type="button">
@@ -124,7 +128,7 @@ const BookmarkList: React.FC<BookmarkListProps> = ({
                   className={`ml-1 rounded p-1 ${
                     isDarkMode
                       ? 'bg-slate-700 text-red-400 hover:bg-slate-600'
-                      : 'bg-white text-red-500 hover:bg-gray-100'
+                      : 'bg-white text-red-500 hover:bg-slate-100'
                   }`}
                   aria-label={t('chat_bookmarks_cancelEdit')}
                   type="button">
@@ -144,7 +148,7 @@ const BookmarkList: React.FC<BookmarkListProps> = ({
                     }}
                     className="w-full text-left">
                     <div
-                      className={`truncate pr-10 text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                      className={`truncate pr-10 text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-slate-700'}`}>
                       {bookmark.title}
                     </div>
                   </button>
@@ -162,8 +166,8 @@ const BookmarkList: React.FC<BookmarkListProps> = ({
                   }}
                   className={`absolute right-[28px] top-1/2 z-10 -translate-y-1/2 rounded p-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100 ${
                     isDarkMode
-                      ? 'bg-slate-700 text-sky-400 hover:bg-slate-600'
-                      : 'bg-white text-sky-500 hover:bg-gray-100'
+                      ? 'bg-slate-700 text-indigo-400 hover:bg-slate-600'
+                      : 'bg-white text-indigo-600 hover:bg-indigo-50'
                   }`}
                   aria-label={t('chat_bookmarks_edit')}
                   type="button">
@@ -181,7 +185,7 @@ const BookmarkList: React.FC<BookmarkListProps> = ({
                   className={`absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded p-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100 ${
                     isDarkMode
                       ? 'bg-slate-700 text-gray-400 hover:bg-slate-600'
-                      : 'bg-white text-gray-500 hover:bg-gray-100'
+                      : 'bg-white text-slate-500 hover:bg-slate-100'
                   }`}
                   aria-label={t('chat_bookmarks_delete')}
                   type="button">

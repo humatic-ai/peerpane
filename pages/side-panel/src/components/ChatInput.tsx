@@ -11,7 +11,7 @@ interface ChatInputProps {
   isProcessingSpeech?: boolean;
   disabled: boolean;
   showStopButton: boolean;
-  setContent?: (setter: (text: string) => void) => void;
+  setContent?: (setter: (text: string | ((prev: string) => string)) => void) => void;
   isDarkMode?: boolean;
   // Historical session ID - if provided, shows replay button instead of send button
   historicalSessionId?: string | null;
@@ -190,14 +190,14 @@ export default function ChatInput({
   return (
     <form
       onSubmit={handleSubmit}
-      className={`overflow-hidden rounded-lg border transition-colors ${disabled ? 'cursor-not-allowed' : 'focus-within:border-sky-400 hover:border-sky-400'} ${isDarkMode ? 'border-slate-700' : ''}`}
+      className={`overflow-hidden rounded-3xl border border-planet9-border bg-white shadow-[0_2px_12px_rgba(0,0,0,0.08)] transition-shadow ${disabled ? 'cursor-not-allowed' : 'focus-within:shadow-[0_4px_20px_rgba(0,0,0,0.12)] hover:border-indigo-400'}`}
       aria-label={t('chat_input_form')}>
       <div className="flex flex-col">
         {/* File attachments display */}
         {attachedFiles.length > 0 && (
           <div
             className={`flex flex-wrap gap-2 border-b p-2 ${
-              isDarkMode ? 'border-slate-700 bg-slate-800' : 'border-gray-200 bg-gray-50'
+              isDarkMode ? 'border-planet9-border bg-planet9-surface' : 'border-gray-200 bg-gray-50'
             }`}>
             {attachedFiles.map((file, index) => (
               <div
@@ -232,10 +232,10 @@ export default function ChatInput({
           className={`w-full resize-none border-none p-2 focus:outline-none ${
             disabled
               ? isDarkMode
-                ? 'cursor-not-allowed bg-slate-800 text-gray-400'
+                ? 'cursor-not-allowed bg-planet9-surface text-gray-400'
                 : 'cursor-not-allowed bg-gray-100 text-gray-500'
               : isDarkMode
-                ? 'bg-slate-800 text-gray-200'
+                ? 'bg-planet9-surface text-gray-200'
                 : 'bg-white'
           }`}
           placeholder={attachedFiles.length > 0 ? 'Add a message (optional)...' : t('chat_input_placeholder')}
@@ -244,7 +244,13 @@ export default function ChatInput({
 
         <div
           className={`flex items-center justify-between px-2 py-1.5 ${
-            disabled ? (isDarkMode ? 'bg-slate-800' : 'bg-gray-100') : isDarkMode ? 'bg-slate-800' : 'bg-white'
+            disabled
+              ? isDarkMode
+                ? 'bg-planet9-surface'
+                : 'bg-gray-100'
+              : isDarkMode
+                ? 'bg-planet9-surface'
+                : 'bg-white'
           }`}>
           <div className="flex gap-2 text-gray-500">
             {/* Attach current page toggle */}
@@ -261,8 +267,8 @@ export default function ChatInput({
                     ? 'cursor-not-allowed opacity-50'
                     : attachPage
                       ? isDarkMode
-                        ? 'bg-sky-700 text-white'
-                        : 'bg-sky-500 text-white'
+                        ? 'bg-indigo-700 text-white'
+                        : 'bg-indigo-500 text-white'
                       : isDarkMode
                         ? 'text-gray-400 hover:bg-slate-700 hover:text-gray-200'
                         : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
@@ -350,7 +356,7 @@ export default function ChatInput({
               type="submit"
               disabled={isSendButtonDisabled}
               aria-disabled={isSendButtonDisabled}
-              className={`rounded-md bg-[#19C2FF] px-3 py-1 text-white transition-colors hover:enabled:bg-[#0073DC] ${isSendButtonDisabled ? 'cursor-not-allowed opacity-50' : ''}`}>
+              className={`rounded-xl bg-gradient-to-br from-planet9-brand to-planet9-brandTo px-3 py-1.5 text-white transition-transform hover:enabled:scale-105 ${isSendButtonDisabled ? 'cursor-not-allowed opacity-50' : ''}`}>
               {t('chat_buttons_send')}
             </button>
           )}

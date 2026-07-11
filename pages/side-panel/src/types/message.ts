@@ -12,7 +12,7 @@ export const ACTOR_PROFILES = {
   assistant: {
     name: 'PeerPane',
     icon: 'icons/humatic.png',
-    iconBackground: '#0EA5E9',
+    iconBackground: '#667eea',
   },
   planner: {
     name: 'Planner',
@@ -22,7 +22,7 @@ export const ACTOR_PROFILES = {
   navigator: {
     name: 'Navigator',
     icon: 'icons/navigator.svg',
-    iconBackground: '#40A9FF',
+    iconBackground: '#818cf8',
   },
   validator: {
     name: 'Validator',

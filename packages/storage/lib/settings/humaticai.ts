@@ -7,9 +7,6 @@ export const DEFAULT_HUMATICAI_BASE_URL = 'https://humaticai.com/ragchat';
 export interface HumaticAIConfig {
   apiKey: string;
   baseUrl: string;
-  provider?: string;
-  model?: string;
-  useRag: boolean;
   /** Maps local chat session IDs to Humatic AI thread IDs for multi-turn continuity */
   threadIdsBySession: Record<string, string>;
 }
@@ -27,9 +24,6 @@ export type HumaticAIStorage = BaseStorage<HumaticAIConfig> & {
 export const DEFAULT_HUMATICAI_SETTINGS: HumaticAIConfig = {
   apiKey: '',
   baseUrl: DEFAULT_HUMATICAI_BASE_URL,
-  provider: undefined,
-  model: undefined,
-  useRag: true,
   threadIdsBySession: {},
 };
 
@@ -38,26 +32,38 @@ const storage = createStorage<HumaticAIConfig>('humaticai-settings', DEFAULT_HUM
   liveUpdate: true,
 });
 
+/** Drop legacy keys (provider / model / useRag) so they are never re-persisted. */
+function sanitize(settings: Partial<HumaticAIConfig> & Record<string, unknown>): HumaticAIConfig {
+  return {
+    apiKey: typeof settings.apiKey === 'string' ? settings.apiKey : '',
+    baseUrl:
+      typeof settings.baseUrl === 'string' && settings.baseUrl.trim() ? settings.baseUrl : DEFAULT_HUMATICAI_BASE_URL,
+    threadIdsBySession:
+      settings.threadIdsBySession && typeof settings.threadIdsBySession === 'object'
+        ? (settings.threadIdsBySession as Record<string, string>)
+        : {},
+  };
+}
+
 export const humaticaiStore: HumaticAIStorage = {
   ...storage,
 
   async updateSettings(settings: Partial<HumaticAIConfig>) {
-    const current = (await storage.get()) || DEFAULT_HUMATICAI_SETTINGS;
-    await storage.set({
-      ...current,
-      ...settings,
-      // Never let a partial update wipe the thread map unless explicitly provided
-      threadIdsBySession: settings.threadIdsBySession ?? current.threadIdsBySession ?? {},
-    });
+    const current = sanitize(
+      ((await storage.get()) || DEFAULT_HUMATICAI_SETTINGS) as unknown as Record<string, unknown>,
+    );
+    await storage.set(
+      sanitize({
+        ...current,
+        ...settings,
+        threadIdsBySession: settings.threadIdsBySession ?? current.threadIdsBySession ?? {},
+      }),
+    );
   },
 
   async getSettings() {
     const settings = await storage.get();
-    return {
-      ...DEFAULT_HUMATICAI_SETTINGS,
-      ...settings,
-      threadIdsBySession: settings?.threadIdsBySession ?? {},
-    };
+    return sanitize({ ...DEFAULT_HUMATICAI_SETTINGS, ...(settings as unknown as Record<string, unknown>) });
   },
 
   async hasApiKey() {

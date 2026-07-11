@@ -109,6 +109,11 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
       return false;
     }
 
+    // Planet 9 returns plain text/JSON (no native structured output yet); use manual JSON extraction.
+    if (this.modelName === 'planet9' || this.modelName.startsWith('planet9')) {
+      return false;
+    }
+
     // Llama API models don't support json_schema response format
     if (this.provider === ProviderTypeEnum.Llama || this.isLlamaModel(this.modelName)) {
       logger.debug(`[${this.modelName}] Llama API doesn't support structured output, using manual JSON extraction`);
