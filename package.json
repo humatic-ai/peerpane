@@ -1,11 +1,11 @@
 {
-  "name": "nanobrowser",
+  "name": "peerpane",
   "version": "0.1.13",
-  "description": "AI web automation tool",
+  "description": "Humatic AI PeerPane Browser Extension — chat with your Digital Peer from any web page",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nanobrowser/nanobrowser.git"
+    "url": "https://github.com/humatic-ai/peerpane.git"
   },
   "type": "module",
   "scripts": {

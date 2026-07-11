@@ -16,6 +16,9 @@ interface ChatInputProps {
   // Historical session ID - if provided, shows replay button instead of send button
   historicalSessionId?: string | null;
   onReplay?: (sessionId: string) => void;
+  /** When true, background attaches screenshot + page text to the next message */
+  attachPage?: boolean;
+  onAttachPageChange?: (enabled: boolean) => void;
 }
 
 // File attachment interface
@@ -37,6 +40,8 @@ export default function ChatInput({
   isDarkMode = false,
   historicalSessionId,
   onReplay,
+  attachPage = false,
+  onAttachPageChange,
 }: ChatInputProps) {
   const [text, setText] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
@@ -242,6 +247,30 @@ export default function ChatInput({
             disabled ? (isDarkMode ? 'bg-slate-800' : 'bg-gray-100') : isDarkMode ? 'bg-slate-800' : 'bg-white'
           }`}>
           <div className="flex gap-2 text-gray-500">
+            {/* Attach current page toggle */}
+            {onAttachPageChange && (
+              <button
+                type="button"
+                onClick={() => onAttachPageChange(!attachPage)}
+                disabled={disabled}
+                aria-pressed={attachPage}
+                aria-label={t('chat_attachPage_a11y')}
+                title={t('chat_attachPage_title')}
+                className={`rounded-md px-2 py-1 text-xs transition-colors ${
+                  disabled
+                    ? 'cursor-not-allowed opacity-50'
+                    : attachPage
+                      ? isDarkMode
+                        ? 'bg-sky-700 text-white'
+                        : 'bg-sky-500 text-white'
+                      : isDarkMode
+                        ? 'text-gray-400 hover:bg-slate-700 hover:text-gray-200'
+                        : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+                }`}>
+                🌐 {t('chat_attachPage_label')}
+              </button>
+            )}
+
             {/* File attachment button */}
             <button
               type="button"

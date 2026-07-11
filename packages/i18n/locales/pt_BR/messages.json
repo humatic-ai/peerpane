@@ -1,11 +1,11 @@
 {
   "app_metadata_description": {
     "description": "Descrição da extensão",
-    "message": "Automatize tarefas da web com IA! NanoBrowser é uma extensão de código aberto para o navegador que permite extrair dados, preencher formulários e muito mais."
+    "message": "PeerPane by Humatic AI — chat with your Digital Peer from any web page. Attach the current page as context."
   },
   "app_metadata_name": {
     "description": "Nome da extensão",
-    "message": "Nanobrowser: Agente Web de IA e Automação"
+    "message": "Humatic AI PeerPane Browser Extension"
   },
   "errors_unknown": {
     "message": "Ocorreu um erro desconhecido"
@@ -38,16 +38,16 @@
     "message": "Voltar para o chat"
   },
   "welcome_title": {
-    "message": "Bem-vindo ao Nanobrowser!"
+    "message": "Welcome to PeerPane"
   },
   "welcome_instruction": {
-    "message": "Para começar, por favor, configure suas chaves de API na página de configurações."
+    "message": "To get started, enter your Humatic AI API key in Settings."
   },
   "welcome_openSettings": {
     "message": "Abrir Configurações"
   },
   "welcome_quickStart": {
-    "message": "Guia de Início Rápido"
+    "message": "Visit Humatic AI"
   },
   "welcome_joinCommunity": {
     "message": "Junte-se à Nossa Comunidade"
@@ -197,7 +197,7 @@
     "message": "Permissão Já Concedida"
   },
   "options_nav_header": {
-    "message": "Configurações"
+    "message": "PeerPane Settings"
   },
   "options_tabs_general": {
     "message": "Geral"
@@ -289,7 +289,6 @@
   "options_models_providers_custom_name_placeholder": {
     "message": "Nome do provedor"
   },
-
   "options_models_providers_apiKey": {
     "message": "Chave de API"
   },
@@ -308,21 +307,18 @@
   "options_models_providers_apiKey_show": {
     "message": "Mostrar chave de API"
   },
-
   "options_models_selection_header": {
     "message": "Seleção de Modelo"
   },
   "options_models_speechToText_header": {
     "message": "Modelo de Fala para Texto"
   },
-
   "options_models_agents_navigator": {
     "message": "Navega em sites e executa ações"
   },
   "options_models_agents_planner": {
     "message": "Desenvolve e refina estratégias para completar tarefas"
   },
-
   "options_models_labels_model": {
     "message": "Modelo"
   },
@@ -410,7 +406,6 @@
       }
     }
   },
-
   "options_firewall_header": {
     "message": "Firewall"
   },
@@ -447,7 +442,6 @@
   "options_firewall_howItWorks": {
     "message": "O firewall contém uma lista de negações e uma lista de permissões.\nSe ambas as listas estiverem vazias, todos os URLs são permitidos\nA lista de negações tem prioridade - se um URL corresponder a qualquer entrada da lista de negações, ele será bloqueado\nQuando a lista de permissões está vazia, todos os URLs não negados são permitidos\nQuando a lista de permissões não está vazia, apenas os URLs correspondentes são permitidos\nCuringas ainda NÃO são suportados\nA lista de permissões é preferível à lista de negações"
   },
-
   "bg_errors_noTabId": {
     "message": "Nenhum ID de aba fornecido"
   },
@@ -547,7 +541,6 @@
   "exec_replay_historyEmpty": {
     "message": "O histórico está vazio"
   },
-
   "act_searchGoogle_start": {
     "message": "Procurando por \"$QUERY$\" no Google",
     "placeholders": {
@@ -966,5 +959,77 @@
         "example": "Opção não encontrada"
       }
     }
+  },
+  "options_tabs_humaticai": {
+    "message": "Humatic AI"
+  },
+  "options_humaticai_header": {
+    "message": "Humatic AI Connection"
+  },
+  "options_humaticai_desc": {
+    "message": "Connect PeerPane to your Humatic AI agent using an API key from your agent settings."
+  },
+  "options_humaticai_apiKey": {
+    "message": "API Key"
+  },
+  "options_humaticai_apiKey_desc": {
+    "message": "Your Humatic AI X-API-Key. Stored locally in the browser."
+  },
+  "options_humaticai_baseUrl": {
+    "message": "API Base URL"
+  },
+  "options_humaticai_baseUrl_desc": {
+    "message": "Default is https://humaticai.com/ragchat. Change only for custom deployments."
+  },
+  "options_humaticai_provider": {
+    "message": "Provider override"
+  },
+  "options_humaticai_model": {
+    "message": "Model override"
+  },
+  "options_humaticai_optional": {
+    "message": "Optional — leave blank for agent default"
+  },
+  "options_humaticai_useRag": {
+    "message": "Use knowledge base (RAG)"
+  },
+  "options_humaticai_useRag_desc": {
+    "message": "Search your agent knowledge base when answering"
+  },
+  "options_humaticai_test": {
+    "message": "Test connection"
+  },
+  "options_humaticai_testing": {
+    "message": "Testing…"
+  },
+  "options_humaticai_test_ok": {
+    "message": "Connected successfully"
+  },
+  "options_humaticai_test_fail": {
+    "message": "Connection failed: $DETAIL$",
+    "placeholders": {
+      "detail": {
+        "content": "$1",
+        "example": "HTTP 401"
+      }
+    }
+  },
+  "options_humaticai_saved": {
+    "message": "Saved"
+  },
+  "options_humaticai_showKey": {
+    "message": "Show"
+  },
+  "options_humaticai_hideKey": {
+    "message": "Hide"
+  },
+  "chat_attachPage_label": {
+    "message": "Page"
+  },
+  "chat_attachPage_title": {
+    "message": "Attach current page (screenshot + text) to the next message"
+  },
+  "chat_attachPage_a11y": {
+    "message": "Toggle attach current page"
   }
 }

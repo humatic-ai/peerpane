@@ -1,6 +1,7 @@
 export enum Actors {
   SYSTEM = 'system',
   USER = 'user',
+  ASSISTANT = 'assistant',
   PLANNER = 'planner',
   NAVIGATOR = 'navigator',
   VALIDATOR = 'validator',

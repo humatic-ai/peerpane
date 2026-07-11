@@ -1,6 +1,8 @@
 import type { Message } from '@extension/storage';
+import { Actors } from '@extension/storage';
 import { ACTOR_PROFILES } from '../types/message';
 import { memo } from 'react';
+import MarkdownContent from './MarkdownContent';
 
 interface MessageListProps {
   messages: Message[];
@@ -34,7 +36,12 @@ function MessageBlock({ message, isSameActor, isDarkMode = false }: MessageBlock
     return <div />;
   }
   const actor = ACTOR_PROFILES[message.actor as keyof typeof ACTOR_PROFILES];
+  if (!actor) {
+    console.error('Unknown actor', message.actor);
+    return <div />;
+  }
   const isProgress = message.content === 'Showing progress...';
+  const useMarkdown = message.actor === Actors.ASSISTANT && !isProgress;
 
   return (
     <div
@@ -47,7 +54,7 @@ function MessageBlock({ message, isSameActor, isDarkMode = false }: MessageBlock
         <div
           className="flex size-8 shrink-0 items-center justify-center rounded-full"
           style={{ backgroundColor: actor.iconBackground }}>
-          <img src={actor.icon} alt={actor.name} className="size-6" />
+          <img src={actor.icon} alt={actor.name} className="size-6 rounded-full object-cover" />
         </div>
       )}
       {isSameActor && <div className="w-8" />}
@@ -60,15 +67,18 @@ function MessageBlock({ message, isSameActor, isDarkMode = false }: MessageBlock
         )}
 
         <div className="space-y-0.5">
-          <div className={`whitespace-pre-wrap break-words text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-            {isProgress ? (
-              <div className={`h-1 overflow-hidden rounded ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
-                <div className="h-full animate-progress bg-blue-500" />
-              </div>
-            ) : (
-              message.content
-            )}
-          </div>
+          {isProgress ? (
+            <div className={`h-1 overflow-hidden rounded ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
+              <div className="h-full animate-progress bg-blue-500" />
+            </div>
+          ) : useMarkdown ? (
+            <MarkdownContent content={message.content} isDarkMode={isDarkMode} />
+          ) : (
+            <div
+              className={`whitespace-pre-wrap break-words text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              {message.content}
+            </div>
+          )}
           {!isProgress && (
             <div className={`text-right text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-300'}`}>
               {formatTimestamp(message.timestamp)}
@@ -80,31 +90,22 @@ function MessageBlock({ message, isSameActor, isDarkMode = false }: MessageBlock
   );
 }
 
-/**
- * Formats a timestamp (in milliseconds) to a readable time string
- * @param timestamp Unix timestamp in milliseconds
- * @returns Formatted time string
- */
 function formatTimestamp(timestamp: number): string {
   const date = new Date(timestamp);
   const now = new Date();
 
-  // Check if the message is from today
   const isToday = date.toDateString() === now.toDateString();
 
-  // Check if the message is from yesterday
   const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
   const isYesterday = date.toDateString() === yesterday.toDateString();
 
-  // Check if the message is from this year
   const isThisYear = date.getFullYear() === now.getFullYear();
 
-  // Format the time (HH:MM)
   const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   if (isToday) {
-    return timeStr; // Just show the time for today's messages
+    return timeStr;
   }
 
   if (isYesterday) {
@@ -112,10 +113,8 @@ function formatTimestamp(timestamp: number): string {
   }
 
   if (isThisYear) {
-    // Show month and day for this year
     return `${date.toLocaleDateString([], { month: 'short', day: 'numeric' })}, ${timeStr}`;
   }
 
-  // Show full date for older messages
   return `${date.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' })}, ${timeStr}`;
 }

@@ -1,0 +1,23 @@
+Humatic AI PeerPane Browser Extension
+Copyright 2026 Humatic AI
+
+PeerPane is a Humatic AI product. Humatic AI, Planet 9, BlogPilot, and PeerPane
+are names used by Humatic AI.
+
+This product includes software developed from nanobrowser
+(https://github.com/nanobrowser/nanobrowser), licensed under the Apache License,
+Version 2.0.
+
+Changes from upstream nanobrowser:
+- Rebranded as Humatic AI PeerPane Browser Extension (name, logos, and
+  user-facing copy).
+- Replaced the default multi-agent browser-automation chat path with a Humatic AI
+  chat client that streams against the public X-API-Key API
+  (POST /chat/stream).
+- Added Humatic AI connection settings (API key, base URL) and optional
+  "attach current page" context (screenshot + page text).
+- The original Planner/Navigator executor remains in the codebase for a later
+  automation stage but is not the primary chat path.
+
+Upstream nanobrowser is Copyright of its respective authors and contributors.
+See the LICENSE file for the full Apache License 2.0 text.

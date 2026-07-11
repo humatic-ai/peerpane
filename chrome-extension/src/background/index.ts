@@ -6,6 +6,8 @@ import {
   generalSettingsStore,
   llmProviderStore,
   analyticsSettingsStore,
+  humaticaiStore,
+  userStore,
 } from '@extension/storage';
 import { t } from '@extension/i18n';
 import BrowserContext from './browser/context';
@@ -18,12 +20,14 @@ import { DEFAULT_AGENT_OPTIONS } from './agent/types';
 import { SpeechToTextService } from './services/speechToText';
 import { injectBuildDomTreeScripts } from './browser/dom/service';
 import { analytics } from './services/analytics';
+import { streamChat, type HumaticAIImage } from './services/humaticai';
 
 const logger = createLogger('background');
 
 const browserContext = new BrowserContext({});
 let currentExecutor: Executor | null = null;
 let currentPort: chrome.runtime.Port | null = null;
+let humaticaiAbortController: AbortController | null = null;
 const SIDE_PANEL_URL = chrome.runtime.getURL('side-panel/index.html');
 
 // Setup side panel behavior
@@ -69,9 +73,178 @@ analyticsSettingsStore.subscribe(() => {
 // Listen for simple messages (e.g., from options page)
 chrome.runtime.onMessage.addListener(() => {
   // Handle other message types if needed in the future
-  // Return false if response is not sent asynchronously
-  // return false;
 });
+
+function postToSidePanel(message: Record<string, unknown>) {
+  try {
+    if (currentPort) {
+      currentPort.postMessage(message);
+    }
+  } catch (error) {
+    logger.error('Failed to send message to side panel:', error);
+  }
+}
+
+async function handleHumaticAIMessage(message: {
+  message?: string;
+  sessionId?: string;
+  threadId?: string;
+  images?: HumaticAIImage[];
+  attachPage?: boolean;
+  tabId?: number;
+}) {
+  const settings = await humaticaiStore.getSettings();
+  if (!settings.apiKey?.trim()) {
+    postToSidePanel({ type: 'humaticai_error', error: t('bg_setup_noApiKeys') });
+    return;
+  }
+
+  const userId = await userStore.getUserId();
+  const sessionId = message.sessionId;
+  let threadId = message.threadId;
+  if (!threadId && sessionId) {
+    threadId = await humaticaiStore.getThreadId(sessionId);
+  }
+
+  let chatMessage = message.message || '';
+  const images: HumaticAIImage[] = [...(message.images || [])];
+
+  // Optionally attach current page screenshot + URL/title/text
+  if (message.attachPage && message.tabId) {
+    try {
+      const pageContext = await capturePageContext(message.tabId);
+      if (pageContext.screenshot) {
+        images.push(pageContext.screenshot);
+      }
+      if (pageContext.textBlock) {
+        chatMessage = chatMessage ? `${chatMessage}\n\n${pageContext.textBlock}` : pageContext.textBlock;
+      }
+    } catch (error) {
+      logger.error('Failed to attach page context:', error);
+    }
+  }
+
+  // Cancel any in-flight stream
+  humaticaiAbortController?.abort();
+  humaticaiAbortController = new AbortController();
+  const signal = humaticaiAbortController.signal;
+
+  await streamChat(
+    {
+      baseUrl: settings.baseUrl,
+      apiKey: settings.apiKey,
+      message: chatMessage,
+      userId,
+      threadId,
+      images: images.length > 0 ? images : undefined,
+      provider: settings.provider,
+      model: settings.model,
+      useRag: settings.useRag,
+      signal,
+    },
+    event => {
+      switch (event.type) {
+        case 'typing':
+          postToSidePanel({ type: 'humaticai_typing' });
+          break;
+        case 'content':
+          postToSidePanel({ type: 'humaticai_chunk', content: event.content });
+          break;
+        case 'new_message':
+          postToSidePanel({ type: 'humaticai_new_message' });
+          break;
+        case 'suggestions':
+          postToSidePanel({ type: 'humaticai_suggestions', suggestions: event.suggestions });
+          break;
+        case 'system':
+          postToSidePanel({
+            type: 'humaticai_system',
+            category: event.category,
+            message: event.message,
+          });
+          break;
+        case 'done':
+          if (event.threadId && sessionId) {
+            humaticaiStore.setThreadId(sessionId, event.threadId).catch(err => {
+              logger.error('Failed to persist thread_id:', err);
+            });
+          }
+          postToSidePanel({
+            type: 'humaticai_done',
+            threadId: event.threadId,
+            userId: event.userId,
+            sessionId,
+          });
+          humaticaiAbortController = null;
+          break;
+        case 'error':
+          postToSidePanel({ type: 'humaticai_error', error: event.message });
+          humaticaiAbortController = null;
+          break;
+      }
+    },
+  );
+}
+
+async function capturePageContext(tabId: number): Promise<{
+  screenshot?: HumaticAIImage;
+  textBlock?: string;
+}> {
+  const result: { screenshot?: HumaticAIImage; textBlock?: string } = {};
+
+  try {
+    const dataUrl = await chrome.tabs.captureVisibleTab({ format: 'png' });
+    if (dataUrl?.startsWith('data:')) {
+      const [header, data] = dataUrl.split(',');
+      const mimeMatch = header.match(/data:([^;]+)/);
+      result.screenshot = {
+        data,
+        mime_type: mimeMatch?.[1] || 'image/png',
+      };
+    }
+  } catch (error) {
+    logger.error('captureVisibleTab failed:', error);
+  }
+
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    const [{ result: pageInfo }] = await chrome.scripting.executeScript({
+      target: { tabId },
+      func: () => {
+        const text = (document.body?.innerText || '').slice(0, 8000);
+        return {
+          url: location.href,
+          title: document.title,
+          text,
+        };
+      },
+    });
+    if (pageInfo) {
+      result.textBlock = [
+        '[Current page context]',
+        `URL: ${pageInfo.url || tab.url || ''}`,
+        `Title: ${pageInfo.title || tab.title || ''}`,
+        pageInfo.text ? `Visible text:\n${pageInfo.text}` : '',
+      ]
+        .filter(Boolean)
+        .join('\n');
+    } else if (tab.url) {
+      result.textBlock = `[Current page context]\nURL: ${tab.url}\nTitle: ${tab.title || ''}`;
+    }
+  } catch (error) {
+    logger.error('Failed to extract page text:', error);
+    try {
+      const tab = await chrome.tabs.get(tabId);
+      if (tab.url) {
+        result.textBlock = `[Current page context]\nURL: ${tab.url}\nTitle: ${tab.title || ''}`;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  return result;
+}
 
 // Setup connection listener for long-lived connections (e.g., side panel)
 chrome.runtime.onConnect.addListener(port => {
@@ -91,9 +264,20 @@ chrome.runtime.onConnect.addListener(port => {
       try {
         switch (message.type) {
           case 'heartbeat':
-            // Acknowledge heartbeat
             port.postMessage({ type: 'heartbeat_ack' });
             break;
+
+          case 'humaticai_message': {
+            await handleHumaticAIMessage(message);
+            break;
+          }
+
+          case 'humaticai_cancel': {
+            humaticaiAbortController?.abort();
+            humaticaiAbortController = null;
+            port.postMessage({ type: 'humaticai_done', cancelled: true });
+            break;
+          }
 
           case 'new_task': {
             if (!message.task) return port.postMessage({ type: 'error', error: t('bg_cmd_newTask_noTask') });
@@ -114,15 +298,12 @@ chrome.runtime.onConnect.addListener(port => {
 
             logger.info('follow_up_task', message.tabId, message.task);
 
-            // If executor exists, add follow-up task
             if (currentExecutor) {
               currentExecutor.addFollowUpTask(message.task);
-              // Re-subscribe to events in case the previous subscription was cleaned up
               subscribeToExecutorEvents(currentExecutor);
               const result = await currentExecutor.execute();
               logger.info('follow_up_task execution result', message.tabId, result);
             } else {
-              // executor was cleaned up, can not add follow-up task
               logger.info('follow_up_task: executor was cleaned up, can not add follow-up task');
               return port.postMessage({ type: 'error', error: t('bg_cmd_followUpTask_cleaned') });
             }
@@ -188,19 +369,14 @@ chrome.runtime.onConnect.addListener(port => {
 
               logger.info('Processing speech-to-text request...');
 
-              // Get all providers for speech-to-text service
               const providers = await llmProviderStore.getAllProviders();
-
-              // Create speech-to-text service with all providers
               const speechToTextService = await SpeechToTextService.create(providers);
 
-              // Extract base64 audio data (remove data URL prefix if present)
               let base64Audio = message.audio;
               if (base64Audio.startsWith('data:')) {
                 base64Audio = base64Audio.split(',')[1];
               }
 
-              // Transcribe audio
               const transcribedText = await speechToTextService.transcribeAudio(base64Audio);
 
               logger.info('Speech-to-text completed successfully');
@@ -225,13 +401,10 @@ chrome.runtime.onConnect.addListener(port => {
             logger.info('replay', message.tabId, message.taskId, message.historySessionId);
 
             try {
-              // Switch to the specified tab
               await browserContext.switchTab(message.tabId);
-              // Setup executor with the new taskId and a dummy task description
               currentExecutor = await setupExecutor(message.taskId, message.task, browserContext);
               subscribeToExecutorEvents(currentExecutor);
 
-              // Run replayHistory with the history session ID
               const result = await currentExecutor.replayHistory(message.historySessionId);
               logger.debug('replay execution result', message.tabId, result);
             } catch (error) {
@@ -257,9 +430,10 @@ chrome.runtime.onConnect.addListener(port => {
     });
 
     port.onDisconnect.addListener(() => {
-      // this event is also triggered when the side panel is closed, so we need to cancel the task
       console.log('Side panel disconnected');
       currentPort = null;
+      humaticaiAbortController?.abort();
+      humaticaiAbortController = null;
       currentExecutor?.cancel();
     });
   }
@@ -267,16 +441,13 @@ chrome.runtime.onConnect.addListener(port => {
 
 async function setupExecutor(taskId: string, task: string, browserContext: BrowserContext) {
   const providers = await llmProviderStore.getAllProviders();
-  // if no providers, need to display the options page
   if (Object.keys(providers).length === 0) {
     throw new Error(t('bg_setup_noApiKeys'));
   }
 
-  // Clean up any legacy validator settings for backward compatibility
   await agentModelStore.cleanupLegacyValidatorSettings();
 
   const agentModels = await agentModelStore.getAllAgentModels();
-  // verify if every provider used in the agent models exists in the providers
   for (const agentModel of Object.values(agentModels)) {
     if (!providers[agentModel.provider]) {
       throw new Error(t('bg_setup_noProvider', [agentModel.provider]));
@@ -287,19 +458,16 @@ async function setupExecutor(taskId: string, task: string, browserContext: Brows
   if (!navigatorModel) {
     throw new Error(t('bg_setup_noNavigatorModel'));
   }
-  // Log the provider config being used for the navigator
   const navigatorProviderConfig = providers[navigatorModel.provider];
   const navigatorLLM = createChatModel(navigatorProviderConfig, navigatorModel);
 
   let plannerLLM: BaseChatModel | null = null;
   const plannerModel = agentModels[AgentNameEnum.Planner];
   if (plannerModel) {
-    // Log the provider config being used for the planner
     const plannerProviderConfig = providers[plannerModel.provider];
     plannerLLM = createChatModel(plannerProviderConfig, plannerModel);
   }
 
-  // Apply firewall settings to browser context
   const firewall = await firewallStore.getFirewall();
   if (firewall.enabled) {
     browserContext.updateConfig({
@@ -335,12 +503,9 @@ async function setupExecutor(taskId: string, task: string, browserContext: Brows
   return executor;
 }
 
-// Update subscribeToExecutorEvents to use port
 async function subscribeToExecutorEvents(executor: Executor) {
-  // Clear previous event listeners to prevent multiple subscriptions
   executor.clearExecutionEvents();
 
-  // Subscribe to new events
   executor.subscribeExecutionEvents(async event => {
     try {
       if (currentPort) {
