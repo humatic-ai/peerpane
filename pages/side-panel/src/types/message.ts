@@ -10,7 +10,7 @@ export const ACTOR_PROFILES = {
     iconBackground: '#2196F3',
   },
   assistant: {
-    name: 'PeerPane',
+    name: 'Humatic AI PeerPane',
     icon: 'icons/humatic.png',
     iconBackground: '#667eea',
   },

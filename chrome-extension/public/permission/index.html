@@ -1,88 +1,198 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Microphone Permission</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Humatic AI PeerPane — Microphone</title>
     <style>
+      :root {
+        --p9-bg: #ffffff;
+        --p9-border: #e2e8f0;
+        --p9-text: #0f172a;
+        --p9-muted: #64748b;
+        --p9-brand: #667eea;
+        --p9-brand-to: #764ba2;
+        --p9-danger: #dc2626;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        margin: 0;
+        overflow: hidden;
+        /* Hide until first fit — avoids scrollbar flash while the popup resizes */
+        visibility: hidden;
+      }
+
       body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        max-width: 400px;
-        margin: 50px auto;
+        margin: 0;
+        overflow: hidden;
+        height: auto;
+        font-family:
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          Roboto,
+          'Helvetica Neue',
+          Arial,
+          sans-serif;
+        background: var(--p9-bg);
+        color: var(--p9-text);
         padding: 20px;
-        text-align: center;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        min-height: 100vh;
+        width: 380px;
+      }
+
+      .shell {
+        width: 100%;
+      }
+
+      .brand {
         display: flex;
-        flex-direction: column;
+        align-items: center;
         justify-content: center;
-        color: white;
+        gap: 8px;
+        margin-bottom: 14px;
       }
-      .container {
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(10px);
+
+      .brand img {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+      }
+
+      .brand span {
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        color: var(--p9-text);
+      }
+
+      .card {
+        border: 1px solid var(--p9-border);
+        background: var(--p9-bg);
         border-radius: 20px;
-        padding: 40px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        padding: 24px;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+        text-align: center;
       }
+
+      .icon-wrap {
+        width: 48px;
+        height: 48px;
+        margin: 0 auto 12px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.12), rgba(118, 75, 162, 0.12));
+        color: var(--p9-brand);
+      }
+
+      .icon-wrap svg {
+        width: 22px;
+        height: 22px;
+      }
+
       h1 {
-        color: white;
-        margin-bottom: 20px;
+        margin: 0 0 6px;
+        font-size: 18px;
+        font-weight: 650;
+        letter-spacing: -0.02em;
+        line-height: 1.25;
+        color: var(--p9-text);
       }
-      p {
-        margin-bottom: 30px;
-        line-height: 1.6;
+
+      .description {
+        margin: 0 0 18px;
+        font-size: 14px;
+        line-height: 1.5;
+        color: var(--p9-muted);
       }
-      button {
-        background: #19c2ff;
-        color: white;
+
+      button#requestPermission {
+        width: 100%;
+        appearance: none;
         border: none;
-        padding: 12px 30px;
-        border-radius: 25px;
-        font-size: 16px;
         cursor: pointer;
-        transition: all 0.3s;
+        border-radius: 12px;
+        padding: 12px 16px;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        color: #fff;
+        background: linear-gradient(135deg, var(--p9-brand) 0%, var(--p9-brand-to) 100%);
+        box-shadow: 0 1px 2px rgba(102, 126, 234, 0.25);
+        transition:
+          opacity 0.15s ease,
+          transform 0.15s ease,
+          box-shadow 0.15s ease;
       }
-      button:hover {
-        background: #0073dc;
-        transform: translateY(-2px);
+
+      button#requestPermission:hover:not(:disabled) {
+        opacity: 0.95;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.28);
       }
-      button:disabled {
-        background: #cccccc;
+
+      button#requestPermission:active:not(:disabled) {
+        transform: translateY(1px);
+      }
+
+      button#requestPermission:disabled {
         cursor: not-allowed;
-        transform: none;
+        opacity: 0.55;
+        box-shadow: none;
+        background: #cbd5e1;
+        color: #475569;
       }
-      .success {
-        color: #4caf50;
+
+      #status {
+        margin: 12px 0 0;
+        font-size: 13px;
+        line-height: 1.45;
+        color: var(--p9-danger);
       }
-      .error {
-        color: #f44336;
-      }
-      .mic-icon {
-        font-size: 48px;
-        margin-bottom: 20px;
-        animation: pulse 2s infinite;
-      }
-      @keyframes pulse {
-        0% {
-          transform: scale(1);
-        }
-        50% {
-          transform: scale(1.1);
-        }
-        100% {
-          transform: scale(1);
-        }
+
+      #status:empty {
+        display: none;
+        margin: 0;
       }
     </style>
   </head>
   <body>
-    <div class="container">
-      <div class="mic-icon">🎤</div>
-      <h1 id="title">Enable Voice Input</h1>
-      <p id="description">Nanobrowser needs microphone access to convert your speech to text.</p>
-      <button id="requestPermission">Grant Microphone Permission</button>
-      <p id="status"></p>
+    <div class="shell">
+      <div class="brand">
+        <img src="/icon-128.png" alt="" width="28" height="28" />
+        <span>Humatic AI PeerPane</span>
+      </div>
+
+      <div class="card">
+        <div class="icon-wrap" aria-hidden="true">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+            <line x1="12" x2="12" y1="19" y2="22" />
+          </svg>
+        </div>
+
+        <h1 id="title">Enable Voice Input</h1>
+        <p id="description" class="description">
+          PeerPane needs microphone access to convert your speech to text.
+        </p>
+
+        <button type="button" id="requestPermission">Grant Microphone Permission</button>
+        <p id="status" role="status" aria-live="polite"></p>
+      </div>
     </div>
+
     <script src="permission.js"></script>
   </body>
 </html>

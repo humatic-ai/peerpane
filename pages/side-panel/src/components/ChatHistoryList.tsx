@@ -1,7 +1,7 @@
 /* eslint-disable react/prop-types */
 import { FaTrash } from 'react-icons/fa';
-import { BsBookmark } from 'react-icons/bs';
 import { t } from '@extension/i18n';
+import ComposerTooltip from './ComposerTooltip';
 
 interface ChatSession {
   id: string;
@@ -13,7 +13,6 @@ interface ChatHistoryListProps {
   sessions: ChatSession[];
   onSessionSelect: (sessionId: string) => void;
   onSessionDelete: (sessionId: string) => void;
-  onSessionBookmark: (sessionId: string) => void;
   visible: boolean;
   isDarkMode?: boolean;
 }
@@ -22,7 +21,6 @@ const ChatHistoryList: React.FC<ChatHistoryListProps> = ({
   sessions,
   onSessionSelect,
   onSessionDelete,
-  onSessionBookmark,
   visible,
   isDarkMode = false,
 }) => {
@@ -60,39 +58,22 @@ const ChatHistoryList: React.FC<ChatHistoryListProps> = ({
                 </p>
               </button>
 
-              {/* Bookmark button - top right */}
-              {onSessionBookmark && (
+              <ComposerTooltip content={t('chat_tooltip_delete')} className="absolute bottom-2 right-2">
                 <button
                   onClick={e => {
                     e.stopPropagation();
-                    onSessionBookmark(session.id);
+                    onSessionDelete(session.id);
                   }}
-                  className={`absolute right-2 top-2 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 ${
+                  className={`rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 ${
                     isDarkMode
-                      ? 'bg-slate-700 text-indigo-400 hover:bg-slate-600'
-                      : 'bg-white text-indigo-600 hover:bg-indigo-50'
+                      ? 'bg-slate-700 text-gray-400 hover:bg-slate-600'
+                      : 'bg-white text-slate-500 hover:bg-slate-100'
                   }`}
-                  aria-label={t('chat_history_bookmark')}
+                  aria-label={t('chat_tooltip_delete')}
                   type="button">
-                  <BsBookmark size={14} />
+                  <FaTrash size={14} />
                 </button>
-              )}
-
-              {/* Delete button - bottom right */}
-              <button
-                onClick={e => {
-                  e.stopPropagation();
-                  onSessionDelete(session.id);
-                }}
-                className={`absolute bottom-2 right-2 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 ${
-                  isDarkMode
-                    ? 'bg-slate-700 text-gray-400 hover:bg-slate-600'
-                    : 'bg-white text-slate-500 hover:bg-slate-100'
-                }`}
-                aria-label={t('chat_history_delete')}
-                type="button">
-                <FaTrash size={14} />
-              </button>
+              </ComposerTooltip>
             </div>
           ))}
         </div>

@@ -7,16 +7,23 @@ import { memo, type ReactNode } from 'react';
 export default memo(function MarkdownContent({
   content,
   isDarkMode = false,
+  variant = 'default',
 }: {
   content: string;
   isDarkMode?: boolean;
+  /** Planet 9 assistant prose uses 16/26 body; default keeps compact side-panel style. */
+  variant?: 'default' | 'assistant';
 }) {
   const blocks = splitBlocks(content);
+  const rootClass =
+    variant === 'assistant'
+      ? `space-y-3 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`
+      : `space-y-2 text-sm ${isDarkMode ? 'text-gray-300' : 'text-slate-700'}`;
 
   return (
-    <div className={`space-y-2 text-sm ${isDarkMode ? 'text-gray-300' : 'text-slate-700'}`}>
+    <div className={rootClass}>
       {blocks.map((block, i) => (
-        <Block key={i} block={block} isDarkMode={isDarkMode} />
+        <Block key={i} block={block} isDarkMode={isDarkMode} variant={variant} />
       ))}
     </div>
   );
@@ -105,14 +112,32 @@ function splitBlocks(src: string): Block[] {
   return blocks;
 }
 
-function Block({ block, isDarkMode }: { block: Block; isDarkMode: boolean }) {
+function Block({
+  block,
+  isDarkMode,
+  variant,
+}: {
+  block: Block;
+  isDarkMode: boolean;
+  variant: 'default' | 'assistant';
+}) {
+  const assistant = variant === 'assistant';
   switch (block.kind) {
     case 'heading': {
       const Tag = `h${Math.min(block.level, 4)}` as 'h1' | 'h2' | 'h3' | 'h4';
-      const size =
-        block.level === 1 ? 'text-base font-bold' : block.level === 2 ? 'text-sm font-bold' : 'text-sm font-semibold';
+      const size = assistant
+        ? block.level === 1
+          ? 'text-[20px] leading-[25px] font-semibold tracking-tight'
+          : block.level === 2
+            ? 'text-[18px] leading-[23px] font-semibold tracking-tight'
+            : 'text-[16px] leading-[20px] font-semibold tracking-tight'
+        : block.level === 1
+          ? 'text-base font-bold'
+          : block.level === 2
+            ? 'text-sm font-bold'
+            : 'text-sm font-semibold';
       return (
-        <Tag className={`${size} ${isDarkMode ? 'text-gray-100' : 'text-slate-800'}`}>
+        <Tag className={`${size} ${isDarkMode ? 'text-gray-100' : assistant ? 'text-gray-900' : 'text-slate-800'}`}>
           {renderInline(block.text, isDarkMode)}
         </Tag>
       );
@@ -120,8 +145,8 @@ function Block({ block, isDarkMode }: { block: Block; isDarkMode: boolean }) {
     case 'code':
       return (
         <pre
-          className={`overflow-x-auto rounded-xl border border-planet9-border p-3 font-mono text-xs ${
-            isDarkMode ? 'bg-planet9-surface text-indigo-200' : 'bg-gray-50 text-gray-800'
+          className={`overflow-x-auto rounded-xl border p-3 font-mono text-xs ${
+            isDarkMode ? 'border-slate-700 bg-slate-900 text-indigo-200' : 'border-gray-200 bg-gray-50 text-gray-800'
           }`}>
           <code>{block.text}</code>
         </pre>
@@ -129,7 +154,10 @@ function Block({ block, isDarkMode }: { block: Block; isDarkMode: boolean }) {
     case 'list': {
       const ListTag = block.ordered ? 'ol' : 'ul';
       return (
-        <ListTag className={`ml-4 space-y-0.5 ${block.ordered ? 'list-decimal' : 'list-disc'}`}>
+        <ListTag
+          className={`ml-4 space-y-1 ${block.ordered ? 'list-decimal' : 'list-disc'} ${
+            assistant ? 'leading-[26px]' : ''
+          }`}>
           {block.items.map((item, idx) => (
             <li key={idx}>{renderInline(item, isDarkMode)}</li>
           ))}
@@ -137,7 +165,14 @@ function Block({ block, isDarkMode }: { block: Block; isDarkMode: boolean }) {
       );
     }
     case 'paragraph':
-      return <p className="whitespace-pre-wrap break-words">{renderInline(block.text, isDarkMode)}</p>;
+      return (
+        <p
+          className={`whitespace-pre-wrap break-words ${
+            assistant ? 'my-3 text-[16px] leading-[26px] first:mt-0 last:mb-0' : ''
+          }`}>
+          {renderInline(block.text, isDarkMode)}
+        </p>
+      );
     default:
       return null;
   }

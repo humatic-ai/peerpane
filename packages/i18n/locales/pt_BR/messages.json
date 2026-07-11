@@ -5,7 +5,7 @@
   },
   "app_metadata_name": {
     "description": "Nome da extensão",
-    "message": "Humatic AI PeerPane Browser Extension"
+    "message": "Humatic AI PeerPane"
   },
   "errors_unknown": {
     "message": "Ocorreu um erro desconhecido"
@@ -22,20 +22,8 @@
       }
     }
   },
-  "nav_newChat_a11y": {
-    "message": "Novo Chat"
-  },
-  "nav_loadHistory_a11y": {
-    "message": "Carregar Histórico"
-  },
-  "nav_settings_a11y": {
-    "message": "Configurações"
-  },
   "nav_settings": {
     "message": "Configurações"
-  },
-  "nav_menu_a11y": {
-    "message": "Mais opções"
   },
   "theme_label": {
     "message": "Tema"
@@ -52,11 +40,8 @@
   "nav_back": {
     "message": "← Voltar"
   },
-  "nav_back_a11y": {
-    "message": "Voltar para o chat"
-  },
   "welcome_title": {
-    "message": "Welcome to PeerPane"
+    "message": "Welcome to Humatic AI PeerPane"
   },
   "welcome_instruction": {
     "message": "To get started, enter your Planet 9 API key in Settings."
@@ -73,15 +58,6 @@
   "status_checkingConfig": {
     "message": "Verificando configuração..."
   },
-  "chat_buttons_stop": {
-    "message": "Parar"
-  },
-  "chat_buttons_replay": {
-    "message": "Reproduzir"
-  },
-  "chat_buttons_send": {
-    "message": "Enviar"
-  },
   "chat_input_placeholder": {
     "message": "Como posso ajudar?"
   },
@@ -96,27 +72,6 @@
   },
   "chat_history_empty": {
     "message": "Nenhum histórico de chat disponível"
-  },
-  "chat_history_bookmark": {
-    "message": "Adicionar sessão aos favoritos"
-  },
-  "chat_history_delete": {
-    "message": "Excluir sessão"
-  },
-  "chat_bookmarks_header": {
-    "message": "Início Rápido"
-  },
-  "chat_bookmarks_saveEdit": {
-    "message": "Salvar alterações"
-  },
-  "chat_bookmarks_cancelEdit": {
-    "message": "Cancelar alterações"
-  },
-  "chat_bookmarks_edit": {
-    "message": "Editar título do favorito"
-  },
-  "chat_bookmarks_delete": {
-    "message": "Excluir favorito"
   },
   "chat_replay_starting": {
     "message": "Iniciando reprodução da tarefa:\n\n\"$TASK$\"",
@@ -151,15 +106,6 @@
       }
     }
   },
-  "chat_stt_processing": {
-    "message": "Processando fala..."
-  },
-  "chat_stt_recording_stop": {
-    "message": "Parar gravação"
-  },
-  "chat_stt_input_start": {
-    "message": "Iniciar entrada de voz"
-  },
   "chat_stt_processingFailed": {
     "message": "Falha ao processar gravação de fala"
   },
@@ -185,7 +131,7 @@
     "message": "Ativar Entrada de Voz"
   },
   "permissions_microphone_description": {
-    "message": "O Nanobrowser precisa de acesso ao microfone para converter sua fala em texto."
+    "message": "O PeerPane precisa de acesso ao microfone para converter sua fala em texto."
   },
   "permissions_microphone_grantButton": {
     "message": "Conceder Permissão ao Microfone"
@@ -194,7 +140,7 @@
     "message": "Solicitando permissão de microfone..."
   },
   "permissions_microphone_grantedSuccess": {
-    "message": "✅ Permissão de microfone concedida! Agora você pode usar a entrada de voz."
+    "message": "Permissão de microfone concedida. Agora você pode usar a entrada de voz."
   },
   "permissions_microphone_grantedButton": {
     "message": "Permissão Concedida"
@@ -209,7 +155,7 @@
     "message": "Nenhum microfone encontrado. Por favor, verifique seus dispositivos de áudio."
   },
   "permissions_microphone_alreadyGranted": {
-    "message": "✅ Permissão de microfone já concedida!"
+    "message": "Permissão de microfone já concedida."
   },
   "permissions_microphone_alreadyGrantedButton": {
     "message": "Permissão Já Concedida"
@@ -1092,13 +1038,55 @@
   "options_humaticai_hideKey": {
     "message": "Hide"
   },
-  "chat_attachPage_label": {
-    "message": "Page"
+  "chat_tooltip_attach": {
+    "message": "Anexar"
   },
-  "chat_attachPage_title": {
-    "message": "Attach current page (screenshot + text) to the next message"
+  "chat_tooltip_attachPage": {
+    "message": "Anexar página"
   },
-  "chat_attachPage_a11y": {
-    "message": "Toggle attach current page"
+  "chat_tooltip_dictate": {
+    "message": "Ditar"
+  },
+  "chat_tooltip_stopDictation": {
+    "message": "Parar"
+  },
+  "chat_tooltip_transcribing": {
+    "message": "Transcrevendo…"
+  },
+  "chat_tooltip_send": {
+    "message": "Enviar"
+  },
+  "chat_tooltip_stop": {
+    "message": "Parar"
+  },
+  "chat_tooltip_replay": {
+    "message": "Repetir"
+  },
+  "chat_tooltip_newChat": {
+    "message": "Novo chat"
+  },
+  "chat_tooltip_history": {
+    "message": "Histórico"
+  },
+  "chat_tooltip_more": {
+    "message": "Mais"
+  },
+  "chat_tooltip_back": {
+    "message": "Voltar"
+  },
+  "chat_tooltip_delete": {
+    "message": "Excluir"
+  },
+  "chat_tooltip_remove": {
+    "message": "Remover"
+  },
+  "chat_tooltip_copyMessage": {
+    "message": "Copiar mensagem"
+  },
+  "chat_tooltip_copyResponse": {
+    "message": "Copiar resposta"
+  },
+  "chat_tooltip_copied": {
+    "message": "Copiado!"
   }
 }

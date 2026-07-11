@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Humatic AI PeerPane Preview</title>
+    <style>
+      html, body { margin: 0; background: #ffffff; }
+      body.page-side-panel { max-width: 420px; }
+      body.page-permission {
+        min-height: 100vh;
+        background: #f1f5f9;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 2rem 1rem;
+      }
+      .chooser {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        max-width: 420px; margin: 4rem auto; padding: 0 1.5rem; color: #1e293b;
+      }
+      .chooser h1 { font-size: 1.25rem; margin: 0 0 0.5rem; }
+      .chooser p { color: #64748b; margin: 0 0 1.5rem; font-size: 0.9rem; }
+      .chooser a {
+        display: block; padding: 0.85rem 1rem; margin-bottom: 0.75rem;
+        border: 1px solid #e2e8f0; border-radius: 0.75rem; text-decoration: none;
+        color: #1e293b; background: #f8fafc;
+      }
+      .chooser a:hover { border-color: #667eea; background: #fff; color: #667eea; }
+      .chooser a strong { display: block; }
+      .chooser a span { font-size: 0.8rem; color: #94a3b8; }
+      .permission-frame {
+        width: 400px;
+        height: auto;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #fff;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+      }
+      .permission-frame iframe {
+        width: 100%;
+        height: 280px;
+        border: 0;
+        display: block;
+        overflow: hidden;
+      }
+      .permission-meta {
+        width: 400px;
+        margin: 0 auto 12px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 12px;
+        color: #64748b;
+      }
+      .permission-meta a { color: #667eea; text-decoration: none; }
+    </style>
+  </head>
+  <body>
+    <div id="app-container"></div>
+    <script>
+      (async () => {
+        const params = new URLSearchParams(location.search);
+        const pageParam = params.get('page');
+        const known = pageParam === 'options' || pageParam === 'side-panel' || pageParam === 'permission';
+        if (!known) {
+          document.getElementById('app-container').innerHTML = `
+            <div class="chooser">
+              <h1>Humatic AI PeerPane preview</h1>
+              <p>Pick a surface (chrome.* APIs are mocked for design review only).</p>
+              <a href="?page=side-panel"><strong>Side panel</strong><span>Welcome screen (no API key)</span></a>
+              <a href="?page=side-panel&demo=1"><strong>Side panel · demo chat</strong><span>Composer + bubbles with a seeded key</span></a>
+              <a href="?page=options"><strong>Options</strong><span>Settings / Planet 9 connection</span></a>
+              <a href="?page=permission"><strong>Mic permission</strong><span>Planet 9–styled grant dialog (popup size)</span></a>
+            </div>`;
+          return;
+        }
+
+        if (pageParam === 'permission') {
+          document.body.classList.add('page-permission');
+          document.title = 'Mic permission (preview)';
+          document.getElementById('app-container').outerHTML = `
+            <div>
+              <div class="permission-meta">
+                Popup shell · sized to content · <a href="/permission/index.html" target="_blank">open raw</a>
+                · <a href="/preview.html">back</a>
+              </div>
+              <div class="permission-frame" id="permission-frame">
+                <iframe id="permission-iframe" title="Microphone permission" src="/permission/index.html?t=${Date.now()}"></iframe>
+              </div>
+            </div>`;
+          window.addEventListener('message', event => {
+            const data = event.data;
+            if (!data || data.type !== 'peerpane-permission-size') return;
+            const iframe = document.getElementById('permission-iframe');
+            const frame = document.getElementById('permission-frame');
+            if (!iframe || !frame) return;
+            const w = Math.max(280, Math.ceil(Number(data.width) || 400));
+            const h = Math.max(160, Math.ceil(Number(data.height) || 280));
+            iframe.style.height = h + 'px';
+            frame.style.width = w + 'px';
+          });
+          return;
+        }
+
+        const page = pageParam;
+        document.body.classList.add('page-' + page);
+        document.title = page === 'options' ? 'Options (preview)' : 'Side Panel (preview)';
+
+        let messages = {};
+        try {
+          messages = await (await fetch('/_locales/en/messages.json')).json();
+        } catch (e) {
+          console.warn('[preview] could not load messages', e);
+        }
+        const getMessage = (key, subs) => {
+          const entry = messages[key];
+          let msg = entry && entry.message != null ? entry.message : '';
+          if (subs != null) {
+            const arr = Array.isArray(subs) ? subs : [subs];
+            arr.forEach((v, i) => { msg = msg.replace(new RegExp('\\$' + (i + 1), 'g'), v); });
+          }
+          return msg;
+        };
+
+        const makeNoop = () => new Proxy(function () {
+          const cb = arguments[arguments.length - 1];
+          if (typeof cb === 'function') { setTimeout(() => { try { cb(); } catch (_) {} }, 0); return; }
+          return Promise.resolve(undefined);
+        }, {
+          get(_t, prop) {
+            if (prop === 'addListener' || prop === 'removeListener' || prop === 'hasListener') return () => {};
+            if (prop === 'then') return undefined;
+            return makeNoop();
+          },
+        });
+
+        const makeStorageArea = () => {
+          const store = {};
+          const listeners = [];
+          const read = keys => {
+            const out = {};
+            if (keys == null) return { ...store };
+            if (typeof keys === 'string') { if (keys in store) out[keys] = store[keys]; return out; }
+            if (Array.isArray(keys)) { keys.forEach(k => { if (k in store) out[k] = store[k]; }); return out; }
+            Object.keys(keys).forEach(k => { out[k] = k in store ? store[k] : keys[k]; });
+            return out;
+          };
+          return {
+            get(keys, cb) { const r = read(keys); if (typeof cb === 'function') { cb(r); return; } return Promise.resolve(r); },
+            set(items, cb) {
+              const changes = {};
+              Object.keys(items || {}).forEach(k => { changes[k] = { oldValue: store[k], newValue: items[k] }; store[k] = items[k]; });
+              listeners.forEach(l => { try { l(changes, 'local'); } catch (_) {} });
+              if (typeof cb === 'function') { cb(); return; } return Promise.resolve();
+            },
+            remove(keys, cb) { (Array.isArray(keys) ? keys : [keys]).forEach(k => delete store[k]); if (typeof cb === 'function') { cb(); return; } return Promise.resolve(); },
+            clear(cb) { Object.keys(store).forEach(k => delete store[k]); if (typeof cb === 'function') { cb(); return; } return Promise.resolve(); },
+            onChanged: { addListener: l => listeners.push(l), removeListener: () => {}, hasListener: () => false },
+          };
+        };
+
+        const wrap = obj => new Proxy(obj, { get(t, p) { return p in t ? t[p] : makeNoop(); } });
+        const local = makeStorageArea();
+        const sync = makeStorageArea();
+        const globalChanged = { addListener: () => {}, removeListener: () => {}, hasListener: () => false };
+
+        const realChrome = {
+          i18n: wrap({ getMessage, getUILanguage: () => 'en' }),
+          storage: wrap({ local, sync, session: makeStorageArea(), onChanged: globalChanged }),
+          runtime: wrap({
+            id: 'peerpane-preview',
+            lastError: undefined,
+            getURL: p => '/' + String(p).replace(/^\//, ''),
+            getManifest: () => ({ version: '0.0.0-preview', name: 'Humatic AI PeerPane (preview)' }),
+            openOptionsPage: cb => { window.open('/preview.html?page=options', '_blank'); if (typeof cb === 'function') cb(); },
+            sendMessage: (...a) => { const cb = a[a.length - 1]; if (typeof cb === 'function') { cb(); return; } return Promise.resolve(); },
+            connect: () => ({
+              name: 'preview',
+              postMessage: () => {},
+              disconnect: () => {},
+              onMessage: { addListener: () => {}, removeListener: () => {} },
+              onDisconnect: { addListener: () => {}, removeListener: () => {} },
+            }),
+            onMessage: { addListener: () => {}, removeListener: () => {}, hasListener: () => false },
+            onConnect: { addListener: () => {}, removeListener: () => {}, hasListener: () => false },
+          }),
+          tabs: wrap({
+            query: (q, cb) => { const r = [{ id: 1, index: 0, active: true, url: 'https://example.com', title: 'Example page' }]; if (typeof cb === 'function') { cb(r); return; } return Promise.resolve(r); },
+            get: (id, cb) => { const t = { id, url: 'https://example.com', title: 'Example page' }; if (typeof cb === 'function') { cb(t); return; } return Promise.resolve(t); },
+            sendMessage: (...a) => { const cb = a[a.length - 1]; if (typeof cb === 'function') { cb(); return; } return Promise.resolve(); },
+            onUpdated: { addListener: () => {}, removeListener: () => {} },
+            onActivated: { addListener: () => {}, removeListener: () => {} },
+            onRemoved: { addListener: () => {}, removeListener: () => {} },
+          }),
+        };
+
+        window.chrome = new Proxy({}, { get(_t, prop) { return prop in realChrome ? realChrome[prop] : makeNoop(); } });
+
+        // Seed a demo API key only when explicitly requested (?demo=1),
+        // so the default preview shows the welcome / missing-key screen.
+        if (params.get('demo') === '1') {
+          await local.set({
+            'humaticai-settings': {
+              apiKey: 'preview-key',
+              baseUrl: 'https://humaticai.com/ragchat',
+              threadIdsBySession: {},
+            },
+          });
+          console.log('[preview] seeded demo storage', await local.get(['humaticai-settings']));
+        }
+
+        let html = '';
+        try { html = await (await fetch('/' + page + '/index.html')).text(); } catch (e) { console.error('[preview] could not load page html', e); }
+        const cssMatch = html.match(/href="\.?\/?(assets\/[^"]+\.css)"/);
+        const jsMatch = html.match(/src="\.?\/?(assets\/[^"]+\.js)"/);
+        if (cssMatch) {
+          const link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = '/' + page + '/' + cssMatch[1];
+          document.head.appendChild(link);
+        }
+        if (jsMatch) {
+          await import('/' + page + '/' + jsMatch[1] + '?t=' + Date.now());
+          setTimeout(async () => {
+            console.log('[preview] post-mount storage', await window.chrome.storage.local.get(['humaticai-settings']));
+          }, 500);
+        } else {
+          console.error('[preview] could not find page bundle in', page + '/index.html');
+        }
+      })();
+    </script>
+  </body>
+</html>

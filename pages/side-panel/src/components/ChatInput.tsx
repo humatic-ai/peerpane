@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { FaMicrophone } from 'react-icons/fa';
-import { AiOutlineLoading3Quarters } from 'react-icons/ai';
+import { LuPlus, LuCamera, LuMic, LuSend, LuSquare, LuPlay, LuLoaderCircle } from 'react-icons/lu';
 import { t } from '@extension/i18n';
+import ComposerTooltip from './ComposerTooltip';
 
 interface ChatInputProps {
   onSendMessage: (text: string, displayText?: string) => void;
@@ -13,7 +13,6 @@ interface ChatInputProps {
   showStopButton: boolean;
   setContent?: (setter: (text: string | ((prev: string) => string)) => void) => void;
   isDarkMode?: boolean;
-  // Historical session ID - if provided, shows replay button instead of send button
   historicalSessionId?: string | null;
   onReplay?: (sessionId: string) => void;
   /** When true, background attaches screenshot + page text to the next message */
@@ -21,7 +20,6 @@ interface ChatInputProps {
   onAttachPageChange?: (enabled: boolean) => void;
 }
 
-// File attachment interface
 interface AttachedFile {
   name: string;
   content: string;
@@ -52,60 +50,51 @@ export default function ChatInput({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Handle text changes and resize textarea
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newText = e.target.value;
     setText(newText);
 
-    // Resize textarea
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = 'auto';
-      textarea.style.height = `${Math.min(textarea.scrollHeight, 100)}px`;
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 150)}px`;
     }
   };
 
-  // Expose a method to set content from outside
   useEffect(() => {
     if (setContent) {
       setContent(setText);
     }
   }, [setContent]);
 
-  // Initial resize when component mounts
   useEffect(() => {
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = 'auto';
-      textarea.style.height = `${Math.min(textarea.scrollHeight, 100)}px`;
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 150)}px`;
     }
   }, []);
 
   const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
-      e.preventDefault();
+    (e?: React.FormEvent) => {
+      e?.preventDefault();
       const trimmedText = text.trim();
 
       if (trimmedText || attachedFiles.length > 0) {
         let messageContent = trimmedText;
         let displayContent = trimmedText;
 
-        // Security: Clearly separate user input from file content
-        // The background service will sanitize file content using guardrails
         if (attachedFiles.length > 0) {
           const fileContents = attachedFiles
             .map(file => {
-              // Tag file content for background service to identify and sanitize
               return `\n\n<nano_file_content type="file" name="${file.name}">\n${file.content}\n</nano_file_content>`;
             })
             .join('\n');
 
-          // Combine user message with tagged file content (for background service)
           messageContent = trimmedText
             ? `${trimmedText}\n\n<nano_attached_files>${fileContents}</nano_attached_files>`
             : `<nano_attached_files>${fileContents}</nano_attached_files>`;
 
-          // Create display version with only filenames (for UI)
           const fileList = attachedFiles.map(file => `📎 ${file.name}`).join('\n');
           displayContent = trimmedText ? `${trimmedText}\n\n${fileList}` : fileList;
         }
@@ -113,6 +102,11 @@ export default function ChatInput({
         onSendMessage(messageContent, displayContent);
         setText('');
         setAttachedFiles([]);
+
+        const textarea = textareaRef.current;
+        if (textarea) {
+          textarea.style.height = 'auto';
+        }
       }
     },
     [text, attachedFiles, onSendMessage],
@@ -122,7 +116,7 @@ export default function ChatInput({
     (e: React.KeyboardEvent) => {
       if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
         e.preventDefault();
-        handleSubmit(e);
+        handleSubmit();
       }
     },
     [handleSubmit],
@@ -149,13 +143,11 @@ export default function ChatInput({
       const file = files[i];
       const fileExt = '.' + file.name.split('.').pop()?.toLowerCase();
 
-      // Check if file type is allowed
       if (!allowedTypes.includes(fileExt)) {
         console.warn(`File type ${fileExt} not supported. Only text-based files are allowed.`);
         continue;
       }
 
-      // Check file size (limit to 1MB)
       if (file.size > 1024 * 1024) {
         console.warn(`File ${file.name} is too large. Maximum size is 1MB.`);
         continue;
@@ -177,7 +169,6 @@ export default function ChatInput({
       setAttachedFiles(prev => [...prev, ...newFiles]);
     }
 
-    // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -187,40 +178,53 @@ export default function ChatInput({
     setAttachedFiles(prev => prev.filter((_, i) => i !== index));
   }, []);
 
+  const cardTone = isDarkMode
+    ? 'border-slate-600 bg-slate-900/80 backdrop-blur-md focus-within:border-slate-500'
+    : 'border-gray-200 bg-white/55 backdrop-blur-xl backdrop-saturate-150 md:bg-white/90 md:backdrop-blur-md md:backdrop-saturate-100 focus-within:border-gray-300';
+
   return (
     <form
       onSubmit={handleSubmit}
-      className={`overflow-hidden rounded-3xl border border-planet9-border bg-white shadow-[0_2px_12px_rgba(0,0,0,0.08)] transition-shadow ${disabled ? 'cursor-not-allowed' : 'focus-within:shadow-[0_4px_20px_rgba(0,0,0,0.12)] hover:border-indigo-400'}`}
+      className={`message-input-card grid min-w-0 max-w-full grid-cols-1 gap-y-1.5 rounded-[20px] border p-3 shadow-sm transition-[box-shadow,border-color] focus-within:shadow-md ${cardTone} ${
+        disabled ? 'cursor-not-allowed opacity-90' : ''
+      }`}
       aria-label={t('chat_input_form')}>
-      <div className="flex flex-col">
-        {/* File attachments display */}
-        {attachedFiles.length > 0 && (
-          <div
-            className={`flex flex-wrap gap-2 border-b p-2 ${
-              isDarkMode ? 'border-planet9-border bg-planet9-surface' : 'border-gray-200 bg-gray-50'
-            }`}>
-            {attachedFiles.map((file, index) => (
-              <div
-                key={index}
-                className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs ${
-                  isDarkMode ? 'bg-slate-700 text-gray-300' : 'bg-gray-200 text-gray-700'
-                }`}>
-                <span className="text-xs">📎</span>
-                <span className="max-w-[150px] truncate">{file.name}</span>
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept=".txt,.md,.markdown,.json,.csv,.log,.xml,.yaml,.yml"
+        onChange={handleFileChange}
+        className="hidden"
+        aria-hidden="true"
+      />
+
+      {attachedFiles.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {attachedFiles.map((file, index) => (
+            <div
+              key={`${file.name}-${index}`}
+              className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs ${
+                isDarkMode ? 'bg-slate-700 text-gray-300' : 'bg-gray-100 text-gray-700'
+              }`}>
+              <span className="max-w-[150px] truncate">{file.name}</span>
+              <ComposerTooltip content={t('chat_tooltip_remove')}>
                 <button
                   type="button"
                   onClick={() => handleRemoveFile(index)}
-                  className={`ml-1 rounded-sm transition-colors ${
-                    isDarkMode ? 'hover:bg-slate-600' : 'hover:bg-gray-300'
+                  className={`ml-0.5 rounded-sm px-0.5 transition-colors ${
+                    isDarkMode ? 'hover:bg-slate-600' : 'hover:bg-gray-200'
                   }`}
-                  aria-label={`Remove ${file.name}`}>
-                  <span className="text-xs">✕</span>
+                  aria-label={t('chat_tooltip_remove')}>
+                  ✕
                 </button>
-              </div>
-            ))}
-          </div>
-        )}
+              </ComposerTooltip>
+            </div>
+          ))}
+        </div>
+      )}
 
+      <div className="flex min-w-0 max-w-full items-end gap-3">
         <textarea
           ref={textareaRef}
           value={text}
@@ -228,137 +232,149 @@ export default function ChatInput({
           onKeyDown={handleKeyDown}
           disabled={disabled}
           aria-disabled={disabled}
-          rows={5}
-          className={`w-full resize-none border-none p-2 focus:outline-none ${
+          rows={1}
+          className={`min-h-0 min-w-0 flex-1 resize-none overflow-x-hidden border-none bg-transparent py-2 text-base focus:outline-none md:text-[15px] ${
             disabled
               ? isDarkMode
-                ? 'cursor-not-allowed bg-planet9-surface text-gray-400'
-                : 'cursor-not-allowed bg-gray-100 text-gray-500'
+                ? 'cursor-not-allowed text-gray-500 placeholder-gray-600'
+                : 'cursor-not-allowed text-gray-500 placeholder-gray-400'
               : isDarkMode
-                ? 'bg-planet9-surface text-gray-200'
-                : 'bg-white'
-          }`}
+                ? 'text-gray-100 placeholder-gray-500'
+                : 'text-gray-900 placeholder-gray-400'
+          } max-h-[150px]`}
           placeholder={attachedFiles.length > 0 ? 'Add a message (optional)...' : t('chat_input_placeholder')}
           aria-label={t('chat_input_editor')}
         />
+      </div>
 
-        <div
-          className={`flex items-center justify-between px-2 py-1.5 ${
-            disabled
-              ? isDarkMode
-                ? 'bg-planet9-surface'
-                : 'bg-gray-100'
-              : isDarkMode
-                ? 'bg-planet9-surface'
-                : 'bg-white'
-          }`}>
-          <div className="flex gap-2 text-gray-500">
-            {/* Attach current page toggle */}
-            {onAttachPageChange && (
-              <button
-                type="button"
-                onClick={() => onAttachPageChange(!attachPage)}
-                disabled={disabled}
-                aria-pressed={attachPage}
-                aria-label={t('chat_attachPage_a11y')}
-                title={t('chat_attachPage_title')}
-                className={`rounded-md px-2 py-1 text-xs transition-colors ${
-                  disabled
-                    ? 'cursor-not-allowed opacity-50'
-                    : attachPage
-                      ? isDarkMode
-                        ? 'bg-indigo-700 text-white'
-                        : 'bg-indigo-500 text-white'
-                      : isDarkMode
-                        ? 'text-gray-400 hover:bg-slate-700 hover:text-gray-200'
-                        : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
-                }`}>
-                🌐 {t('chat_attachPage_label')}
-              </button>
-            )}
-
-            {/* File attachment button */}
+      <div className="flex items-center justify-between gap-1.5">
+        <div className="flex min-w-0 items-center gap-1">
+          <ComposerTooltip content={t('chat_tooltip_attach')}>
             <button
               type="button"
               onClick={handleFileSelect}
-              disabled={disabled}
-              aria-label="Attach files"
-              title="Attach text files (txt, md, json, csv, etc.)"
-              className={`rounded-md p-1.5 transition-colors ${
-                disabled
-                  ? 'cursor-not-allowed opacity-50'
-                  : isDarkMode
-                    ? 'text-gray-400 hover:bg-slate-700 hover:text-gray-200'
-                    : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+              disabled={disabled || isRecording}
+              aria-label={t('chat_tooltip_attach')}
+              className={`flex size-8 shrink-0 items-center justify-center rounded-lg bg-transparent transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                isDarkMode ? 'text-gray-400 hover:bg-slate-700' : 'text-gray-600 hover:bg-gray-100'
               }`}>
-              <span className="text-lg">📎</span>
+              <LuPlus size={18} strokeWidth={2} aria-hidden />
             </button>
+          </ComposerTooltip>
 
-            {/* Hidden file input */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              accept=".txt,.md,.markdown,.json,.csv,.log,.xml,.yaml,.yml"
-              onChange={handleFileChange}
-              className="hidden"
-              aria-hidden="true"
-            />
+          {onAttachPageChange && (
+            <ComposerTooltip content={t('chat_tooltip_attachPage')}>
+              <button
+                type="button"
+                onClick={() => onAttachPageChange(!attachPage)}
+                disabled={disabled || isRecording}
+                aria-pressed={attachPage}
+                aria-label={t('chat_tooltip_attachPage')}
+                className={`flex size-8 shrink-0 items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                  attachPage
+                    ? 'bg-indigo-50 text-indigo-700'
+                    : isDarkMode
+                      ? 'bg-transparent text-gray-400 hover:bg-slate-700'
+                      : 'bg-transparent text-gray-600 hover:bg-gray-100'
+                }`}>
+                <LuCamera size={18} strokeWidth={2} aria-hidden />
+              </button>
+            </ComposerTooltip>
+          )}
+        </div>
 
-            {onMicClick && (
+        <div className="flex min-w-0 flex-1 items-center justify-end gap-1">
+          {onMicClick && (
+            <ComposerTooltip
+              content={
+                isProcessingSpeech
+                  ? t('chat_tooltip_transcribing')
+                  : isRecording
+                    ? t('chat_tooltip_stopDictation')
+                    : t('chat_tooltip_dictate')
+              }>
               <button
                 type="button"
                 onClick={onMicClick}
                 disabled={disabled || isProcessingSpeech}
                 aria-label={
                   isProcessingSpeech
-                    ? t('chat_stt_processing')
+                    ? t('chat_tooltip_transcribing')
                     : isRecording
-                      ? t('chat_stt_recording_stop')
-                      : t('chat_stt_input_start')
+                      ? t('chat_tooltip_stopDictation')
+                      : t('chat_tooltip_dictate')
                 }
-                className={`rounded-md p-1.5 transition-colors ${
-                  disabled || isProcessingSpeech
-                    ? 'cursor-not-allowed opacity-50'
+                aria-pressed={isRecording}
+                className={`mic-recording-pulse relative flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-all select-none disabled:cursor-not-allowed disabled:opacity-40 ${
+                  isProcessingSpeech
+                    ? isDarkMode
+                      ? 'bg-slate-800 text-gray-400'
+                      : 'bg-gray-100 text-gray-500'
                     : isRecording
-                      ? 'bg-red-500 text-white hover:bg-red-600'
+                      ? 'animate-pulse bg-red-100 text-red-600'
                       : isDarkMode
-                        ? 'text-gray-400 hover:bg-slate-700 hover:text-gray-200'
-                        : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+                        ? 'bg-transparent text-gray-400 hover:bg-slate-700'
+                        : 'bg-transparent text-gray-600 hover:bg-gray-100'
                 }`}>
                 {isProcessingSpeech ? (
-                  <AiOutlineLoading3Quarters className="size-4 animate-spin" />
+                  <LuLoaderCircle className="size-[18px] shrink-0 animate-spin" aria-hidden />
                 ) : (
-                  <FaMicrophone className={`size-4 ${isRecording ? 'animate-pulse' : ''}`} />
+                  <LuMic size={18} strokeWidth={2} aria-hidden />
                 )}
               </button>
-            )}
-          </div>
+            </ComposerTooltip>
+          )}
 
           {showStopButton ? (
-            <button
-              type="button"
-              onClick={onStopTask}
-              className="rounded-md bg-red-500 px-3 py-1 text-white transition-colors hover:bg-red-600">
-              {t('chat_buttons_stop')}
-            </button>
+            <ComposerTooltip content={t('chat_tooltip_stop')}>
+              <button
+                type="button"
+                onClick={onStopTask}
+                className={`relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full transition-colors ${
+                  isDarkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-gray-100 hover:bg-gray-200'
+                }`}
+                aria-label={t('chat_tooltip_stop')}>
+                <span
+                  className="pointer-events-none absolute inset-0 animate-spin rounded-full"
+                  style={{
+                    animationDuration: '0.8s',
+                    background:
+                      'conic-gradient(from 0deg, transparent 0deg, #6366f1 60deg, #a855f7 180deg, transparent 360deg)',
+                    mask: 'radial-gradient(farthest-side, transparent calc(100% - 3px), black calc(100% - 3px))',
+                    WebkitMask: 'radial-gradient(farthest-side, transparent calc(100% - 3px), black calc(100% - 3px))',
+                  }}
+                />
+                <LuSquare
+                  size={12}
+                  fill="currentColor"
+                  className={`relative z-10 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}
+                  aria-hidden
+                />
+              </button>
+            </ComposerTooltip>
           ) : historicalSessionId ? (
-            <button
-              type="button"
-              onClick={handleReplay}
-              disabled={!historicalSessionId}
-              aria-disabled={!historicalSessionId}
-              className={`rounded-md bg-green-500 px-3 py-1 text-white transition-colors hover:enabled:bg-green-600 ${!historicalSessionId ? 'cursor-not-allowed opacity-50' : ''}`}>
-              {t('chat_buttons_replay')}
-            </button>
+            <ComposerTooltip content={t('chat_tooltip_replay')}>
+              <button
+                type="button"
+                onClick={handleReplay}
+                disabled={!historicalSessionId}
+                aria-disabled={!historicalSessionId}
+                className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white transition-all hover:from-indigo-600 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label={t('chat_tooltip_replay')}>
+                <LuPlay size={16} strokeWidth={2} aria-hidden />
+              </button>
+            </ComposerTooltip>
           ) : (
-            <button
-              type="submit"
-              disabled={isSendButtonDisabled}
-              aria-disabled={isSendButtonDisabled}
-              className={`rounded-xl bg-gradient-to-br from-planet9-brand to-planet9-brandTo px-3 py-1.5 text-white transition-transform hover:enabled:scale-105 ${isSendButtonDisabled ? 'cursor-not-allowed opacity-50' : ''}`}>
-              {t('chat_buttons_send')}
-            </button>
+            <ComposerTooltip content={t('chat_tooltip_send')}>
+              <button
+                type="submit"
+                disabled={isSendButtonDisabled || isRecording}
+                aria-disabled={isSendButtonDisabled || isRecording}
+                className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white transition-all hover:from-indigo-600 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:from-indigo-500 disabled:hover:to-purple-600"
+                aria-label={t('chat_tooltip_send')}>
+                <LuSend size={16} strokeWidth={2} aria-hidden />
+              </button>
+            </ComposerTooltip>
           )}
         </div>
       </div>

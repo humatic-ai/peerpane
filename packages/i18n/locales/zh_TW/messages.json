@@ -5,7 +5,7 @@
   },
   "app_metadata_name": {
     "description": "Extension name",
-    "message": "Humatic AI PeerPane Browser Extension"
+    "message": "Humatic AI PeerPane"
   },
   "errors_unknown": {
     "message": "發生未知錯誤"
@@ -22,20 +22,8 @@
       }
     }
   },
-  "nav_newChat_a11y": {
-    "message": "新對話"
-  },
-  "nav_loadHistory_a11y": {
-    "message": "載入歷史紀錄"
-  },
-  "nav_settings_a11y": {
-    "message": "設定"
-  },
   "nav_settings": {
     "message": "設定"
-  },
-  "nav_menu_a11y": {
-    "message": "更多選項"
   },
   "theme_label": {
     "message": "主題"
@@ -52,11 +40,8 @@
   "nav_back": {
     "message": "← 返回"
   },
-  "nav_back_a11y": {
-    "message": "回到對話"
-  },
   "welcome_title": {
-    "message": "Welcome to PeerPane"
+    "message": "Welcome to Humatic AI PeerPane"
   },
   "welcome_instruction": {
     "message": "To get started, enter your Planet 9 API key in Settings."
@@ -73,15 +58,6 @@
   "status_checkingConfig": {
     "message": "正在檢查設定..."
   },
-  "chat_buttons_stop": {
-    "message": "停止"
-  },
-  "chat_buttons_replay": {
-    "message": "重播"
-  },
-  "chat_buttons_send": {
-    "message": "傳送"
-  },
   "chat_input_placeholder": {
     "message": "有什麼需要協助的嗎？"
   },
@@ -96,27 +72,6 @@
   },
   "chat_history_empty": {
     "message": "沒有可用的對話歷史紀錄"
-  },
-  "chat_history_bookmark": {
-    "message": "將工作階段加入書籤"
-  },
-  "chat_history_delete": {
-    "message": "刪除工作階段"
-  },
-  "chat_bookmarks_header": {
-    "message": "快速入門"
-  },
-  "chat_bookmarks_saveEdit": {
-    "message": "儲存變更"
-  },
-  "chat_bookmarks_cancelEdit": {
-    "message": "取消變更"
-  },
-  "chat_bookmarks_edit": {
-    "message": "編輯書籤標題"
-  },
-  "chat_bookmarks_delete": {
-    "message": "刪除書籤"
   },
   "chat_replay_starting": {
     "message": "開始重播任務：\n\n\"$TASK$\"",
@@ -151,15 +106,6 @@
       }
     }
   },
-  "chat_stt_processing": {
-    "message": "正在處理語音..."
-  },
-  "chat_stt_recording_stop": {
-    "message": "停止錄音"
-  },
-  "chat_stt_input_start": {
-    "message": "開始語音輸入"
-  },
   "chat_stt_processingFailed": {
     "message": "處理語音輸入失敗"
   },
@@ -185,7 +131,7 @@
     "message": "啟用語音輸入"
   },
   "permissions_microphone_description": {
-    "message": "Nanobrowser 需要麥克風存取權限，才能將語音轉換為文字。"
+    "message": "PeerPane 需要麥克風存取權限，才能將語音轉換為文字。"
   },
   "permissions_microphone_grantButton": {
     "message": "授予麥克風權限"
@@ -194,7 +140,7 @@
     "message": "正在請求麥克風權限..."
   },
   "permissions_microphone_grantedSuccess": {
-    "message": "✅ 已授予麥克風權限！您現在可以使用語音輸入了。"
+    "message": "已授予麥克風權限。您現在可以使用語音輸入了。"
   },
   "permissions_microphone_grantedButton": {
     "message": "已授予權限"
@@ -209,7 +155,7 @@
     "message": "找不到麥克風。請檢查您的音訊裝置。"
   },
   "permissions_microphone_alreadyGranted": {
-    "message": "✅ 已授予麥克風權限！"
+    "message": "已授予麥克風權限。"
   },
   "permissions_microphone_alreadyGrantedButton": {
     "message": "已授予權限"
@@ -1092,13 +1038,55 @@
   "options_humaticai_hideKey": {
     "message": "Hide"
   },
-  "chat_attachPage_label": {
-    "message": "Page"
+  "chat_tooltip_attach": {
+    "message": "附加"
   },
-  "chat_attachPage_title": {
-    "message": "Attach current page (screenshot + text) to the next message"
+  "chat_tooltip_attachPage": {
+    "message": "附加頁面"
   },
-  "chat_attachPage_a11y": {
-    "message": "Toggle attach current page"
+  "chat_tooltip_dictate": {
+    "message": "語音輸入"
+  },
+  "chat_tooltip_stopDictation": {
+    "message": "停止"
+  },
+  "chat_tooltip_transcribing": {
+    "message": "轉錄中…"
+  },
+  "chat_tooltip_send": {
+    "message": "傳送"
+  },
+  "chat_tooltip_stop": {
+    "message": "停止"
+  },
+  "chat_tooltip_replay": {
+    "message": "重播"
+  },
+  "chat_tooltip_newChat": {
+    "message": "新對話"
+  },
+  "chat_tooltip_history": {
+    "message": "紀錄"
+  },
+  "chat_tooltip_more": {
+    "message": "更多"
+  },
+  "chat_tooltip_back": {
+    "message": "返回"
+  },
+  "chat_tooltip_delete": {
+    "message": "刪除"
+  },
+  "chat_tooltip_remove": {
+    "message": "移除"
+  },
+  "chat_tooltip_copyMessage": {
+    "message": "複製訊息"
+  },
+  "chat_tooltip_copyResponse": {
+    "message": "複製回覆"
+  },
+  "chat_tooltip_copied": {
+    "message": "已複製！"
   }
 }

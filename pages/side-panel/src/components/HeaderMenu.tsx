@@ -3,6 +3,7 @@ import { BsThreeDotsVertical } from 'react-icons/bs';
 import { FiSun, FiMoon, FiMonitor, FiChevronRight, FiCheck } from 'react-icons/fi';
 import { themeSettingsStore, type ThemePreference } from '@extension/storage';
 import { t } from '@extension/i18n';
+import ComposerTooltip from './ComposerTooltip';
 
 const GearIcon = ({ className }: { className?: string }) => (
   <svg
@@ -91,16 +92,18 @@ export default function HeaderMenu({ isDarkMode = false, theme, onThemeChange }:
 
   return (
     <div className="relative" ref={menuRef}>
-      <button
-        type="button"
-        onClick={() => setOpen(prev => !prev)}
-        className="icon-btn"
-        aria-label={t('nav_menu_a11y')}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        tabIndex={0}>
-        <BsThreeDotsVertical size={18} />
-      </button>
+      <ComposerTooltip content={t('chat_tooltip_more')} side="bottom" disabled={open}>
+        <button
+          type="button"
+          onClick={() => setOpen(prev => !prev)}
+          className="icon-btn"
+          aria-label={t('chat_tooltip_more')}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          tabIndex={0}>
+          <BsThreeDotsVertical size={18} />
+        </button>
+      </ComposerTooltip>
 
       {open && (
         <div role="menu" className={`absolute right-0 z-50 mt-2 w-52 rounded-xl border py-1 ${panelClass}`}>

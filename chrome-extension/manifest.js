@@ -39,7 +39,7 @@ function withOperaSidebar(manifest) {
   return deepmerge(manifest, {
     sidebar_action: {
       default_panel: 'side-panel/index.html',
-      default_title: 'PeerPane',
+      default_title: 'Humatic AI PeerPane',
       default_icon: 'icon-32.png',
     },
   });

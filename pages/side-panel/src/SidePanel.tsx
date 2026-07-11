@@ -9,13 +9,12 @@ import {
   generalSettingsStore,
   type ThemePreference,
 } from '@extension/storage';
-import favoritesStorage, { type FavoritePrompt } from '@extension/storage/lib/prompt/favorites';
 import { t } from '@extension/i18n';
 import MessageList from './components/MessageList';
 import ChatInput from './components/ChatInput';
 import ChatHistoryList from './components/ChatHistoryList';
-import BookmarkList from './components/BookmarkList';
 import HeaderMenu from './components/HeaderMenu';
+import ComposerTooltip from './components/ComposerTooltip';
 import { EventType, type AgentEvent, ExecutionState } from './types/event';
 import './SidePanel.css';
 
@@ -59,7 +58,6 @@ const SidePanel = () => {
     typeof window !== 'undefined' ? window.matchMedia('(prefers-color-scheme: dark)').matches : false,
   );
   const isDarkMode = themePreference === 'dark' || (themePreference === 'system' && systemPrefersDark);
-  const [favoritePrompts, setFavoritePrompts] = useState<FavoritePrompt[]>([]);
   const [hasApiKey, setHasApiKey] = useState<boolean | null>(null);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [attachPage, setAttachPage] = useState(false);
@@ -111,14 +109,26 @@ const SidePanel = () => {
     try {
       const configured = await humaticaiStore.hasApiKey();
       setHasApiKey(configured);
+      if (!configured) {
+        setShowHistory(false);
+      }
     } catch (error) {
       console.error('Error checking Humatic AI configuration:', error);
       setHasApiKey(false);
+      setShowHistory(false);
     }
   }, []);
 
   useEffect(() => {
     checkApiKeyConfiguration();
+  }, [checkApiKeyConfiguration]);
+
+  // Re-check when Planet 9 settings change (e.g. API key saved/cleared in Options).
+  useEffect(() => {
+    const unsub = humaticaiStore.subscribe(() => {
+      void checkApiKeyConfiguration();
+    });
+    return unsub;
   }, [checkApiKeyConfiguration]);
 
   useEffect(() => {
@@ -583,6 +593,82 @@ const SidePanel = () => {
     [setupConnection],
   );
 
+  const startRecording = useCallback(async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const recorder = new MediaRecorder(stream);
+    audioChunksRef.current = [];
+
+    recorder.ondataavailable = event => {
+      if (event.data.size > 0) audioChunksRef.current.push(event.data);
+    };
+    recorder.onstop = async () => {
+      stream.getTracks().forEach(track => track.stop());
+      setIsRecording(false);
+      const mimeType = recorder.mimeType || 'audio/webm';
+      const blob = new Blob(audioChunksRef.current, { type: mimeType });
+      audioChunksRef.current = [];
+      if (blob.size === 0) return;
+
+      setIsProcessingSpeech(true);
+      try {
+        const base64 = await blobToBase64(blob);
+        const text = (await requestTranscription(base64, blob.type || mimeType)).trim();
+        if (text && setInputTextRef.current) {
+          setInputTextRef.current(prev => {
+            const existing = typeof prev === 'string' ? prev : '';
+            return existing.trim() ? `${existing.trim()} ${text}` : text;
+          });
+        }
+      } catch (error) {
+        console.error('Transcription failed:', error);
+        appendMessage({
+          actor: Actors.SYSTEM,
+          content: error instanceof Error ? error.message : t('chat_stt_processingFailed'),
+          timestamp: Date.now(),
+        });
+      } finally {
+        setIsProcessingSpeech(false);
+      }
+    };
+
+    mediaRecorderRef.current = recorder;
+    recorder.start();
+    setIsRecording(true);
+  }, [requestTranscription, appendMessage]);
+
+  const openMicPermissionDialog = useCallback(() => {
+    const permissionUrl = chrome.runtime.getURL('permission/index.html');
+    chrome.windows.create(
+      {
+        url: permissionUrl,
+        type: 'popup',
+        width: 420,
+        height: 480,
+      },
+      createdWindow => {
+        if (!createdWindow?.id) return;
+        const windowId = createdWindow.id;
+        const onWindowClose = (closedId: number) => {
+          if (closedId !== windowId) return;
+          chrome.windows.onRemoved.removeListener(onWindowClose);
+          window.setTimeout(async () => {
+            try {
+              const status = await navigator.permissions.query({
+                name: 'microphone' as PermissionName,
+              });
+              if (status.state === 'granted') {
+                await startRecording();
+              }
+            } catch (error) {
+              console.error('Failed to check microphone permission after grant dialog:', error);
+            }
+          }, 500);
+        };
+        chrome.windows.onRemoved.addListener(onWindowClose);
+      },
+    );
+  }, [startRecording]);
+
   const handleMicClick = useCallback(async () => {
     if (isProcessingSpeech) return;
 
@@ -596,56 +682,48 @@ const SidePanel = () => {
     }
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      audioChunksRef.current = [];
+      // Side panel cannot reliably show Chrome's mic prompt — open the
+      // extension permission page so getUserMedia triggers the native dialog.
+      let permissionState: PermissionState | 'unknown' = 'unknown';
+      try {
+        const status = await navigator.permissions.query({
+          name: 'microphone' as PermissionName,
+        });
+        permissionState = status.state;
+      } catch {
+        // permissions.query(microphone) unsupported — fall through to getUserMedia
+      }
 
-      recorder.ondataavailable = event => {
-        if (event.data.size > 0) audioChunksRef.current.push(event.data);
-      };
-      recorder.onstop = async () => {
-        stream.getTracks().forEach(track => track.stop());
-        setIsRecording(false);
-        const mimeType = recorder.mimeType || 'audio/webm';
-        const blob = new Blob(audioChunksRef.current, { type: mimeType });
-        audioChunksRef.current = [];
-        if (blob.size === 0) return;
+      if (permissionState === 'denied') {
+        appendMessage({
+          actor: Actors.SYSTEM,
+          content: t('chat_stt_microphone_permissionDenied'),
+          timestamp: Date.now(),
+        });
+        return;
+      }
 
-        setIsProcessingSpeech(true);
-        try {
-          const base64 = await blobToBase64(blob);
-          const text = (await requestTranscription(base64, blob.type || mimeType)).trim();
-          if (text && setInputTextRef.current) {
-            setInputTextRef.current(prev => {
-              const existing = typeof prev === 'string' ? prev : '';
-              return existing.trim() ? `${existing.trim()} ${text}` : text;
-            });
-          }
-        } catch (error) {
-          console.error('Transcription failed:', error);
-          appendMessage({
-            actor: Actors.SYSTEM,
-            content: error instanceof Error ? error.message : t('chat_stt_processingFailed'),
-            timestamp: Date.now(),
-          });
-        } finally {
-          setIsProcessingSpeech(false);
-        }
-      };
+      if (permissionState !== 'granted') {
+        openMicPermissionDialog();
+        return;
+      }
 
-      mediaRecorderRef.current = recorder;
-      recorder.start();
-      setIsRecording(true);
+      await startRecording();
     } catch (error) {
       console.error('Microphone access failed:', error);
       setIsRecording(false);
+      const name = error instanceof DOMException ? error.name : '';
+      if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+        openMicPermissionDialog();
+        return;
+      }
       appendMessage({
         actor: Actors.SYSTEM,
-        content: t('chat_stt_microphone_accessFailed'),
+        content: name === 'NotFoundError' ? t('chat_stt_microphone_notFound') : t('chat_stt_microphone_accessFailed'),
         timestamp: Date.now(),
       });
     }
-  }, [isRecording, isProcessingSpeech, requestTranscription, appendMessage]);
+  }, [isRecording, isProcessingSpeech, startRecording, openMicPermissionDialog, appendMessage]);
 
   const handleStopTask = async () => {
     try {
@@ -743,70 +821,6 @@ const SidePanel = () => {
     }
   };
 
-  const handleSessionBookmark = async (sessionId: string) => {
-    try {
-      const fullSession = await chatHistoryStore.getSession(sessionId);
-      if (fullSession && fullSession.messages.length > 0) {
-        const title = fullSession.title.split(' ').slice(0, 8).join(' ');
-        const taskContent = fullSession.messages[0]?.content || '';
-        await favoritesStorage.addPrompt(title, taskContent);
-        const prompts = await favoritesStorage.getAllPrompts();
-        setFavoritePrompts(prompts);
-        handleBackToChat(true);
-      }
-    } catch (error) {
-      console.error('Failed to pin session to favorites:', error);
-    }
-  };
-
-  const handleBookmarkSelect = (content: string) => {
-    if (setInputTextRef.current) {
-      setInputTextRef.current(content);
-    }
-  };
-
-  const handleBookmarkUpdateTitle = async (id: number, title: string) => {
-    try {
-      await favoritesStorage.updatePromptTitle(id, title);
-      const prompts = await favoritesStorage.getAllPrompts();
-      setFavoritePrompts(prompts);
-    } catch (error) {
-      console.error('Failed to update favorite prompt title:', error);
-    }
-  };
-
-  const handleBookmarkDelete = async (id: number) => {
-    try {
-      await favoritesStorage.removePrompt(id);
-      const prompts = await favoritesStorage.getAllPrompts();
-      setFavoritePrompts(prompts);
-    } catch (error) {
-      console.error('Failed to delete favorite prompt:', error);
-    }
-  };
-
-  const handleBookmarkReorder = async (draggedId: number, targetId: number) => {
-    try {
-      await favoritesStorage.reorderPrompts(draggedId, targetId);
-      const updatedPromptsFromStorage = await favoritesStorage.getAllPrompts();
-      setFavoritePrompts(updatedPromptsFromStorage);
-    } catch (error) {
-      console.error('Failed to reorder favorite prompts:', error);
-    }
-  };
-
-  useEffect(() => {
-    const loadFavorites = async () => {
-      try {
-        const prompts = await favoritesStorage.getAllPrompts();
-        setFavoritePrompts(prompts);
-      } catch (error) {
-        console.error('Failed to load favorite prompts:', error);
-      }
-    };
-    loadFavorites();
-  }, []);
-
   useEffect(() => {
     return () => {
       stopConnection();
@@ -828,75 +842,78 @@ const SidePanel = () => {
         <header className={`header relative ${isDarkMode ? 'header--dark' : ''}`}>
           <div className="header-logo">
             {showHistory && (
-              <button
-                type="button"
-                onClick={() => handleBackToChat(false)}
-                className={`cursor-pointer ${
-                  isDarkMode ? 'text-gray-400 hover:text-gray-100' : 'text-slate-500 hover:text-slate-800'
-                }`}
-                aria-label={t('nav_back_a11y')}>
-                {t('nav_back')}
-              </button>
+              <ComposerTooltip content={t('chat_tooltip_back')} side="bottom">
+                <button
+                  type="button"
+                  onClick={() => handleBackToChat(false)}
+                  className={`cursor-pointer ${
+                    isDarkMode ? 'text-gray-400 hover:text-gray-100' : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                  aria-label={t('chat_tooltip_back')}>
+                  {t('nav_back')}
+                </button>
+              </ComposerTooltip>
             )}
           </div>
           <div className="header-icons">
-            {!showHistory && (
+            {!showHistory && hasApiKey === true && (
               <>
-                <button
-                  type="button"
-                  onClick={handleNewChat}
-                  onKeyDown={e => e.key === 'Enter' && handleNewChat()}
-                  className="icon-btn"
-                  aria-label={t('nav_newChat_a11y')}
-                  title={t('nav_newChat_a11y')}
-                  tabIndex={0}>
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true">
-                    <path d="M12 5v14" />
-                    <path d="M5 12h14" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleLoadHistory}
-                  onKeyDown={e => e.key === 'Enter' && handleLoadHistory()}
-                  className="icon-btn"
-                  aria-label={t('nav_loadHistory_a11y')}
-                  title={t('nav_loadHistory_a11y')}
-                  tabIndex={0}>
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                  </svg>
-                </button>
+                <ComposerTooltip content={t('chat_tooltip_newChat')} side="bottom">
+                  <button
+                    type="button"
+                    onClick={handleNewChat}
+                    onKeyDown={e => e.key === 'Enter' && handleNewChat()}
+                    className="icon-btn"
+                    aria-label={t('chat_tooltip_newChat')}
+                    tabIndex={0}>
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true">
+                      <path d="M12 5v14" />
+                      <path d="M5 12h14" />
+                    </svg>
+                  </button>
+                </ComposerTooltip>
+                <ComposerTooltip content={t('chat_tooltip_history')} side="bottom">
+                  <button
+                    type="button"
+                    onClick={handleLoadHistory}
+                    onKeyDown={e => e.key === 'Enter' && handleLoadHistory()}
+                    className="icon-btn"
+                    aria-label={t('chat_tooltip_history')}
+                    tabIndex={0}>
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg>
+                  </button>
+                </ComposerTooltip>
               </>
             )}
             <HeaderMenu isDarkMode={isDarkMode} theme={themePreference} onThemeChange={setThemePreference} />
           </div>
         </header>
-        {showHistory ? (
+        {showHistory && hasApiKey === true ? (
           <div className="flex min-h-0 flex-1 overflow-hidden">
             <ChatHistoryList
               sessions={chatSessions}
               onSessionSelect={handleSessionSelect}
               onSessionDelete={handleSessionDelete}
-              onSessionBookmark={handleSessionBookmark}
               visible={true}
               isDarkMode={isDarkMode}
             />
@@ -950,76 +967,45 @@ const SidePanel = () => {
 
             {hasApiKey === true && (
               <>
-                {messages.length === 0 && (
-                  <>
-                    <div className="mb-2 border-t border-planet9-border p-2 shadow-sm backdrop-blur-sm">
-                      <ChatInput
-                        onSendMessage={handleSendMessage}
-                        onStopTask={handleStopTask}
-                        onMicClick={handleMicClick}
-                        isRecording={isRecording}
-                        isProcessingSpeech={isProcessingSpeech}
-                        disabled={!inputEnabled || isHistoricalSession}
-                        showStopButton={showStopButton}
-                        setContent={setter => {
-                          setInputTextRef.current = setter;
-                        }}
-                        isDarkMode={isDarkMode}
-                        attachPage={attachPage}
-                        onAttachPageChange={setAttachPage}
-                      />
-                    </div>
-                    <div className="flex-1 overflow-y-auto">
-                      <BookmarkList
-                        bookmarks={favoritePrompts}
-                        onBookmarkSelect={handleBookmarkSelect}
-                        onBookmarkUpdateTitle={handleBookmarkUpdateTitle}
-                        onBookmarkDelete={handleBookmarkDelete}
-                        onBookmarkReorder={handleBookmarkReorder}
-                        isDarkMode={isDarkMode}
-                      />
-                    </div>
-                  </>
-                )}
-                {messages.length > 0 && (
-                  <div className="scrollbar-gutter-stable flex-1 overflow-x-hidden overflow-y-scroll scroll-smooth bg-planet9-surface p-2">
-                    <MessageList messages={messages} isDarkMode={isDarkMode} />
-                    {suggestions.length > 0 && (
-                      <div className="mt-3 flex flex-wrap gap-2 px-1">
-                        {suggestions.map((s, i) => (
-                          <button
-                            key={`${s.title}-${i}`}
-                            type="button"
-                            disabled={!inputEnabled}
-                            onClick={() => handleSuggestionClick(s.prompt)}
-                            className="rounded-xl border border-planet9-border bg-white px-3 py-1.5 text-xs text-slate-600 transition-colors hover:border-indigo-400 hover:bg-slate-50 hover:text-indigo-600 disabled:cursor-not-allowed disabled:opacity-50">
-                            {s.title}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    <div ref={messagesEndRef} />
-                  </div>
-                )}
-                {messages.length > 0 && (
-                  <div className="border-t border-planet9-border p-2 shadow-sm backdrop-blur-sm">
-                    <ChatInput
-                      onSendMessage={handleSendMessage}
-                      onStopTask={handleStopTask}
-                      onMicClick={handleMicClick}
-                      isRecording={isRecording}
-                      isProcessingSpeech={isProcessingSpeech}
-                      disabled={!inputEnabled || isHistoricalSession}
-                      showStopButton={showStopButton}
-                      setContent={setter => {
-                        setInputTextRef.current = setter;
-                      }}
-                      isDarkMode={isDarkMode}
-                      attachPage={attachPage}
-                      onAttachPageChange={setAttachPage}
-                    />
-                  </div>
-                )}
+                <div className="scrollbar-gutter-stable flex-1 overflow-x-hidden overflow-y-scroll scroll-smooth bg-white px-3 pt-4 pb-2">
+                  {messages.length > 0 && (
+                    <>
+                      <MessageList messages={messages} isDarkMode={isDarkMode} />
+                      {suggestions.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2 px-1">
+                          {suggestions.map((s, i) => (
+                            <button
+                              key={`${s.title}-${i}`}
+                              type="button"
+                              disabled={!inputEnabled}
+                              onClick={() => handleSuggestionClick(s.prompt)}
+                              className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-600 transition-colors hover:border-indigo-400 hover:bg-gray-50 hover:text-indigo-600 disabled:cursor-not-allowed disabled:opacity-50">
+                              {s.title}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      <div ref={messagesEndRef} />
+                    </>
+                  )}
+                </div>
+                <div className="message-input-shell px-3 pt-2 pb-2">
+                  <ChatInput
+                    onSendMessage={handleSendMessage}
+                    onStopTask={handleStopTask}
+                    onMicClick={handleMicClick}
+                    isRecording={isRecording}
+                    isProcessingSpeech={isProcessingSpeech}
+                    disabled={!inputEnabled || isHistoricalSession}
+                    showStopButton={showStopButton}
+                    setContent={setter => {
+                      setInputTextRef.current = setter;
+                    }}
+                    isDarkMode={isDarkMode}
+                    attachPage={attachPage}
+                    onAttachPageChange={setAttachPage}
+                  />
+                </div>
               </>
             )}
           </div>
