@@ -1,4 +1,27 @@
-# Humatic AI PeerPane Browser Extension
+<p align="center">
+  <img src="docs/assets/logo.png" alt="HumaticAI" width="96" />
+</p>
+
+<h1 align="center">Humatic AI PeerPane Browser Extension</h1>
+
+<p align="center">
+  <strong>Chat with your Digital Peer from any web page</strong> — Planet 9 side panel for Chrome.
+</p>
+
+<p align="center">
+  <img alt="version" src="https://img.shields.io/badge/version-0.1.13-blue" />
+  <img alt="chrome" src="https://img.shields.io/badge/Chrome-Extension-4285F4" />
+  <img alt="license" src="https://img.shields.io/badge/license-Apache%202.0-blue" />
+</p>
+
+<p align="center">
+  <a href="https://humaticai.com">Planet 9</a> ·
+  <a href="CHANGELOG.md">Changelog</a> ·
+  <a href="SECURITY.md">Security</a> ·
+  <a href="CONTRIBUTING.md">Contributing</a>
+</p>
+
+---
 
 **PeerPane** is the Humatic AI browser extension — connect to [Planet 9](https://humaticai.com) and chat with your Digital Peer from any web page. Enter your Planet 9 API key in Settings, then use the side panel to stream conversations — optionally attaching the current page (screenshot + text) as context.
 
