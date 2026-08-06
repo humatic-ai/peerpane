@@ -1,8 +1,10 @@
-import { memo, type ReactNode } from 'react';
+import { memo, useMemo } from 'react';
+import ReactMarkdown, { type Components } from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 /**
- * Lightweight markdown renderer (no extra dependency).
- * Supports: headings, bold/italic, inline code, fenced code, links, lists, paragraphs.
+ * GFM markdown renderer (react-markdown + remark-gfm).
+ * Bundled only — no rehype-raw / CDN (MV3 CSP).
  */
 export default memo(function MarkdownContent({
   content,
@@ -14,207 +16,146 @@ export default memo(function MarkdownContent({
   /** Planet 9 assistant prose uses 16/26 body; default keeps compact side-panel style. */
   variant?: 'default' | 'assistant';
 }) {
-  const blocks = splitBlocks(content);
-  const rootClass =
-    variant === 'assistant'
-      ? `space-y-3 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`
-      : `space-y-2 text-sm ${isDarkMode ? 'text-gray-300' : 'text-slate-700'}`;
-
-  return (
-    <div className={rootClass}>
-      {blocks.map((block, i) => (
-        <Block key={i} block={block} isDarkMode={isDarkMode} variant={variant} />
-      ))}
-    </div>
-  );
-});
-
-type Block =
-  | { kind: 'heading'; level: number; text: string }
-  | { kind: 'code'; lang: string; text: string }
-  | { kind: 'list'; ordered: boolean; items: string[] }
-  | { kind: 'paragraph'; text: string };
-
-function splitBlocks(src: string): Block[] {
-  const lines = src.replace(/\r\n/g, '\n').split('\n');
-  const blocks: Block[] = [];
-  let i = 0;
-
-  while (i < lines.length) {
-    const line = lines[i];
-
-    // Fenced code
-    if (line.trimStart().startsWith('```')) {
-      const lang = line.trimStart().slice(3).trim();
-      const codeLines: string[] = [];
-      i += 1;
-      while (i < lines.length && !lines[i].trimStart().startsWith('```')) {
-        codeLines.push(lines[i]);
-        i += 1;
-      }
-      i += 1; // skip closing fence
-      blocks.push({ kind: 'code', lang, text: codeLines.join('\n') });
-      continue;
-    }
-
-    // Heading
-    const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
-    if (headingMatch) {
-      blocks.push({ kind: 'heading', level: headingMatch[1].length, text: headingMatch[2] });
-      i += 1;
-      continue;
-    }
-
-    // Unordered list
-    if (/^\s*[-*+]\s+/.test(line)) {
-      const items: string[] = [];
-      while (i < lines.length && /^\s*[-*+]\s+/.test(lines[i])) {
-        items.push(lines[i].replace(/^\s*[-*+]\s+/, ''));
-        i += 1;
-      }
-      blocks.push({ kind: 'list', ordered: false, items });
-      continue;
-    }
-
-    // Ordered list
-    if (/^\s*\d+\.\s+/.test(line)) {
-      const items: string[] = [];
-      while (i < lines.length && /^\s*\d+\.\s+/.test(lines[i])) {
-        items.push(lines[i].replace(/^\s*\d+\.\s+/, ''));
-        i += 1;
-      }
-      blocks.push({ kind: 'list', ordered: true, items });
-      continue;
-    }
-
-    // Blank line
-    if (line.trim() === '') {
-      i += 1;
-      continue;
-    }
-
-    // Paragraph (consume consecutive non-blank, non-special lines)
-    const para: string[] = [];
-    while (
-      i < lines.length &&
-      lines[i].trim() !== '' &&
-      !lines[i].trimStart().startsWith('```') &&
-      !/^(#{1,6})\s+/.test(lines[i]) &&
-      !/^\s*[-*+]\s+/.test(lines[i]) &&
-      !/^\s*\d+\.\s+/.test(lines[i])
-    ) {
-      para.push(lines[i]);
-      i += 1;
-    }
-    blocks.push({ kind: 'paragraph', text: para.join('\n') });
-  }
-
-  return blocks;
-}
-
-function Block({
-  block,
-  isDarkMode,
-  variant,
-}: {
-  block: Block;
-  isDarkMode: boolean;
-  variant: 'default' | 'assistant';
-}) {
   const assistant = variant === 'assistant';
-  switch (block.kind) {
-    case 'heading': {
-      const Tag = `h${Math.min(block.level, 4)}` as 'h1' | 'h2' | 'h3' | 'h4';
-      const size = assistant
-        ? block.level === 1
-          ? 'text-[20px] leading-[25px] font-semibold tracking-tight'
-          : block.level === 2
-            ? 'text-[18px] leading-[23px] font-semibold tracking-tight'
-            : 'text-[16px] leading-[20px] font-semibold tracking-tight'
-        : block.level === 1
-          ? 'text-base font-bold'
-          : block.level === 2
-            ? 'text-sm font-bold'
-            : 'text-sm font-semibold';
-      return (
-        <Tag className={`${size} ${isDarkMode ? 'text-gray-100' : assistant ? 'text-gray-900' : 'text-slate-800'}`}>
-          {renderInline(block.text, isDarkMode)}
-        </Tag>
-      );
-    }
-    case 'code':
-      return (
-        <pre
-          className={`overflow-x-auto rounded-xl border p-3 font-mono text-xs ${
-            isDarkMode ? 'border-slate-700 bg-slate-900 text-indigo-200' : 'border-gray-200 bg-gray-50 text-gray-800'
-          }`}>
-          <code>{block.text}</code>
-        </pre>
-      );
-    case 'list': {
-      const ListTag = block.ordered ? 'ol' : 'ul';
-      return (
-        <ListTag
-          className={`ml-4 space-y-1 ${block.ordered ? 'list-decimal' : 'list-disc'} ${
-            assistant ? 'leading-[26px]' : ''
-          }`}>
-          {block.items.map((item, idx) => (
-            <li key={idx}>{renderInline(item, isDarkMode)}</li>
-          ))}
-        </ListTag>
-      );
-    }
-    case 'paragraph':
-      return (
-        <p
-          className={`whitespace-pre-wrap break-words ${
-            assistant ? 'my-3 text-[16px] leading-[26px] first:mt-0 last:mb-0' : ''
-          }`}>
-          {renderInline(block.text, isDarkMode)}
-        </p>
-      );
-    default:
-      return null;
-  }
-}
+  const rootClass = assistant
+    ? `space-y-3 text-[16px] leading-[26px] ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`
+    : `space-y-2 text-sm ${isDarkMode ? 'text-gray-300' : 'text-slate-700'}`;
 
-function renderInline(text: string, isDarkMode: boolean): ReactNode[] {
-  // Tokenize: code, bold, italic, links
-  const pattern = /(`[^`]+`|\*\*[^*]+\*\*|__[^_]+__|\*[^*]+\*|_[^_]+_|\[[^\]]+\]\([^)]+\))/g;
-  const parts = text.split(pattern);
-  return parts.filter(Boolean).map((part, i) => {
-    if (part.startsWith('`') && part.endsWith('`')) {
-      return (
-        <code
-          key={i}
-          className={`rounded px-1 py-0.5 font-mono text-xs ${isDarkMode ? 'bg-slate-700 text-indigo-200' : 'bg-gray-100 text-indigo-600'}`}>
-          {part.slice(1, -1)}
-        </code>
-      );
-    }
-    if ((part.startsWith('**') && part.endsWith('**')) || (part.startsWith('__') && part.endsWith('__'))) {
-      return <strong key={i}>{part.slice(2, -2)}</strong>;
-    }
-    if ((part.startsWith('*') && part.endsWith('*')) || (part.startsWith('_') && part.endsWith('_'))) {
-      return <em key={i}>{part.slice(1, -1)}</em>;
-    }
-    const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
-    if (linkMatch) {
-      const href = linkMatch[2];
-      const safe = href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:');
-      if (safe) {
+  const components = useMemo<Components>(
+    () => ({
+      a: ({ href, children }) => {
+        const safe =
+          typeof href === 'string' &&
+          (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:'));
+        if (!safe) {
+          return <span>{children}</span>;
+        }
         return (
           <a
-            key={i}
             href={href}
             target="_blank"
             rel="noopener noreferrer"
             className={`underline ${isDarkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>
-            {linkMatch[1]}
+            {children}
           </a>
         );
-      }
-    }
-    return <span key={i}>{part}</span>;
-  });
-}
+      },
+      code: ({ className, children, ...props }) => {
+        const isBlock = Boolean(className?.includes('language-')) || String(children).includes('\n');
+        if (!isBlock) {
+          return (
+            <code
+              className={`rounded px-1 py-0.5 font-mono text-xs ${
+                isDarkMode ? 'bg-slate-700 text-indigo-200' : 'bg-gray-100 text-indigo-600'
+              }`}
+              {...props}>
+              {children}
+            </code>
+          );
+        }
+        return (
+          <code className={`font-mono text-xs ${className ?? ''}`} {...props}>
+            {children}
+          </code>
+        );
+      },
+      pre: ({ children }) => (
+        <pre
+          className={`overflow-x-auto rounded-xl border p-3 font-mono text-xs ${
+            isDarkMode ? 'border-slate-700 bg-slate-900 text-indigo-200' : 'border-gray-200 bg-gray-50 text-gray-800'
+          }`}>
+          {children}
+        </pre>
+      ),
+      table: ({ children }) => (
+        <div className="my-2 w-full overflow-x-auto">
+          <table
+            className={`w-full border-collapse text-left text-sm ${
+              isDarkMode ? 'border-slate-700' : 'border-gray-200'
+            }`}>
+            {children}
+          </table>
+        </div>
+      ),
+      th: ({ children }) => (
+        <th
+          className={`border px-2 py-1 font-semibold ${
+            isDarkMode ? 'border-slate-700 bg-slate-800' : 'border-gray-200 bg-gray-50'
+          }`}>
+          {children}
+        </th>
+      ),
+      td: ({ children }) => (
+        <td className={`border px-2 py-1 ${isDarkMode ? 'border-slate-700' : 'border-gray-200'}`}>{children}</td>
+      ),
+      h1: ({ children }) => (
+        <h1
+          className={`${
+            assistant ? 'text-[20px] leading-[25px] font-semibold tracking-tight' : 'text-base font-bold'
+          } ${isDarkMode ? 'text-gray-100' : assistant ? 'text-gray-900' : 'text-slate-800'}`}>
+          {children}
+        </h1>
+      ),
+      h2: ({ children }) => (
+        <h2
+          className={`${
+            assistant ? 'text-[18px] leading-[23px] font-semibold tracking-tight' : 'text-sm font-bold'
+          } ${isDarkMode ? 'text-gray-100' : assistant ? 'text-gray-900' : 'text-slate-800'}`}>
+          {children}
+        </h2>
+      ),
+      h3: ({ children }) => (
+        <h3
+          className={`${
+            assistant ? 'text-[16px] leading-[20px] font-semibold tracking-tight' : 'text-sm font-semibold'
+          } ${isDarkMode ? 'text-gray-100' : assistant ? 'text-gray-900' : 'text-slate-800'}`}>
+          {children}
+        </h3>
+      ),
+      h4: ({ children }) => (
+        <h4
+          className={`${
+            assistant ? 'text-[16px] leading-[20px] font-semibold tracking-tight' : 'text-sm font-semibold'
+          } ${isDarkMode ? 'text-gray-100' : assistant ? 'text-gray-900' : 'text-slate-800'}`}>
+          {children}
+        </h4>
+      ),
+      ul: ({ children }) => (
+        <ul className={`ml-4 list-disc space-y-1 ${assistant ? 'leading-[26px]' : ''}`}>{children}</ul>
+      ),
+      ol: ({ children }) => (
+        <ol className={`ml-4 list-decimal space-y-1 ${assistant ? 'leading-[26px]' : ''}`}>{children}</ol>
+      ),
+      p: ({ children }) => (
+        <p
+          className={`whitespace-pre-wrap break-words ${
+            assistant ? 'my-3 text-[16px] leading-[26px] first:mt-0 last:mb-0' : ''
+          }`}>
+          {children}
+        </p>
+      ),
+      blockquote: ({ children }) => (
+        <blockquote
+          className={`border-l-4 pl-3 italic ${
+            isDarkMode ? 'border-slate-600 text-gray-300' : 'border-gray-300 text-gray-600'
+          }`}>
+          {children}
+        </blockquote>
+      ),
+      hr: () => <hr className={`my-3 ${isDarkMode ? 'border-slate-700' : 'border-gray-200'}`} />,
+      del: ({ children }) => <del className="opacity-80">{children}</del>,
+      input: ({ checked, ...props }) => (
+        <input type="checkbox" checked={checked} disabled readOnly className="mr-1 align-middle" {...props} />
+      ),
+    }),
+    [assistant, isDarkMode],
+  );
+
+  return (
+    <div className={rootClass}>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
+});

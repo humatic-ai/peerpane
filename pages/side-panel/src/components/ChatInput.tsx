@@ -1,7 +1,10 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from 'react';
 import { LuPlus, LuCamera, LuMic, LuSend, LuSquare, LuPlay, LuLoaderCircle } from 'react-icons/lu';
 import { t } from '@extension/i18n';
 import ComposerTooltip from './ComposerTooltip';
+
+/** Max height (px) for composer textarea auto-grow; keep in sync with `max-h-[150px]`. */
+const TEXTAREA_AUTOGROW_MAX_PX = 150;
 
 interface ChatInputProps {
   onSendMessage: (text: string, displayText?: string) => void;
@@ -50,15 +53,19 @@ export default function ChatInput({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newText = e.target.value;
-    setText(newText);
+  const syncTextareaHeight = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.overflowY = 'hidden';
+    el.style.height = 'auto';
+    const sh = Math.ceil(el.scrollHeight);
+    const capped = Math.min(sh, TEXTAREA_AUTOGROW_MAX_PX);
+    el.style.height = `${capped}px`;
+    el.style.overflowY = sh > TEXTAREA_AUTOGROW_MAX_PX ? 'auto' : 'hidden';
+  }, []);
 
-    const textarea = textareaRef.current;
-    if (textarea) {
-      textarea.style.height = 'auto';
-      textarea.style.height = `${Math.min(textarea.scrollHeight, 150)}px`;
-    }
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setText(e.target.value);
   };
 
   useEffect(() => {
@@ -67,13 +74,9 @@ export default function ChatInput({
     }
   }, [setContent]);
 
-  useEffect(() => {
-    const textarea = textareaRef.current;
-    if (textarea) {
-      textarea.style.height = 'auto';
-      textarea.style.height = `${Math.min(textarea.scrollHeight, 150)}px`;
-    }
-  }, []);
+  useLayoutEffect(() => {
+    syncTextareaHeight();
+  }, [text, syncTextareaHeight]);
 
   const handleSubmit = useCallback(
     (e?: React.FormEvent) => {
@@ -102,11 +105,6 @@ export default function ChatInput({
         onSendMessage(messageContent, displayContent);
         setText('');
         setAttachedFiles([]);
-
-        const textarea = textareaRef.current;
-        if (textarea) {
-          textarea.style.height = 'auto';
-        }
       }
     },
     [text, attachedFiles, onSendMessage],
@@ -263,16 +261,16 @@ export default function ChatInput({
           </ComposerTooltip>
 
           {onAttachPageChange && (
-            <ComposerTooltip content={t('chat_tooltip_attachPage')}>
+            <ComposerTooltip content={attachPage ? t('chat_tooltip_detachPage') : t('chat_tooltip_attachPage')}>
               <button
                 type="button"
                 onClick={() => onAttachPageChange(!attachPage)}
                 disabled={disabled || isRecording}
                 aria-pressed={attachPage}
-                aria-label={t('chat_tooltip_attachPage')}
+                aria-label={attachPage ? t('chat_tooltip_detachPage') : t('chat_tooltip_attachPage')}
                 className={`flex size-8 shrink-0 items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
                   attachPage
-                    ? 'bg-indigo-50 text-indigo-700'
+                    ? 'bg-red-100 text-red-600'
                     : isDarkMode
                       ? 'bg-transparent text-gray-400 hover:bg-slate-700'
                       : 'bg-transparent text-gray-600 hover:bg-gray-100'

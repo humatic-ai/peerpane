@@ -15,7 +15,7 @@ import { createPlanet9ChatModel } from './agent/planet9Model';
 import { DEFAULT_AGENT_OPTIONS } from './agent/types';
 import { injectBuildDomTreeScripts } from './browser/dom/service';
 import { analytics } from './services/analytics';
-import { streamChat, transcribeAudio, type HumaticAIImage } from './services/humaticai';
+import { streamChat, transcribeAudio, synthesizeSpeech, type HumaticAIImage } from './services/humaticai';
 
 const logger = createLogger('background');
 
@@ -333,6 +333,57 @@ chrome.runtime.onConnect.addListener(port => {
               return port.postMessage({
                 type: 'humaticai_transcribe_error',
                 error: error instanceof Error ? error.message : t('bg_cmd_stt_failed'),
+              });
+            }
+          }
+
+          case 'humaticai_synthesize': {
+            try {
+              const text = typeof message.text === 'string' ? message.text.trim() : '';
+              if (!text) {
+                return port.postMessage({
+                  type: 'humaticai_synthesize_error',
+                  error: t('chat_tooltip_readAloudError'),
+                });
+              }
+
+              const settings = await humaticaiStore.getSettings();
+              if (!settings.apiKey?.trim()) {
+                return port.postMessage({
+                  type: 'humaticai_synthesize_error',
+                  error: t('bg_setup_noApiKeys'),
+                });
+              }
+
+              const audioBuffer = await synthesizeSpeech({
+                baseUrl: settings.baseUrl,
+                apiKey: settings.apiKey,
+                text,
+                voice: typeof message.voice === 'string' ? message.voice : undefined,
+                rate: typeof message.rate === 'number' ? message.rate : undefined,
+                pitch: typeof message.pitch === 'number' ? message.pitch : undefined,
+              });
+
+              const bytes = new Uint8Array(audioBuffer);
+              let binary = '';
+              const chunk = 0x8000;
+              for (let i = 0; i < bytes.length; i += chunk) {
+                binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+              }
+              const base64 = btoa(binary);
+
+              return port.postMessage({
+                type: 'humaticai_synthesize_result',
+                audio: base64,
+                mimeType: 'audio/mpeg',
+                requestId: message.requestId,
+              });
+            } catch (error) {
+              logger.error('Planet 9 TTS failed:', error);
+              return port.postMessage({
+                type: 'humaticai_synthesize_error',
+                error: error instanceof Error ? error.message : t('chat_tooltip_readAloudError'),
+                requestId: message.requestId,
               });
             }
           }

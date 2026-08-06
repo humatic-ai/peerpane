@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img alt="version" src="https://img.shields.io/badge/version-0.1.13-blue" />
+  <img alt="version" src="https://img.shields.io/badge/version-0.1.14-blue" />
   <img alt="chrome" src="https://img.shields.io/badge/Chrome-Extension-4285F4" />
   <img alt="license" src="https://img.shields.io/badge/license-Apache%202.0-blue" />
 </p>

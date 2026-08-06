@@ -73,6 +73,12 @@
   "chat_history_empty": {
     "message": "No chat history available"
   },
+  "chat_history_searchPlaceholder": {
+    "message": "Search chats"
+  },
+  "chat_history_noMatch": {
+    "message": "No chats match that search."
+  },
   "chat_replay_starting": {
     "message": "Starting replay of task:\n\n\"$TASK$\"",
     "placeholders": {
@@ -162,6 +168,9 @@
   },
   "options_nav_header": {
     "message": "Settings"
+  },
+  "options_nav_close": {
+    "message": "Close"
   },
   "options_section_configuration": {
     "message": "Configuration"
@@ -1044,6 +1053,9 @@
   "chat_tooltip_attachPage": {
     "message": "Attach page"
   },
+  "chat_tooltip_detachPage": {
+    "message": "Stop attaching page"
+  },
   "chat_tooltip_dictate": {
     "message": "Dictate"
   },
@@ -1088,5 +1100,17 @@
   },
   "chat_tooltip_copied": {
     "message": "Copied!"
+  },
+  "chat_tooltip_readAloud": {
+    "message": "Read aloud"
+  },
+  "chat_tooltip_stopReading": {
+    "message": "Stop reading"
+  },
+  "chat_tooltip_readAloudError": {
+    "message": "Could not read aloud"
+  },
+  "chat_tooltip_jumpToLatest": {
+    "message": "Jump to latest"
   }
 }

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import '@src/Options.css';
 import { withErrorBoundary, withSuspense } from '@extension/shared';
 import { t } from '@extension/i18n';
-import { FiSettings, FiHelpCircle, FiKey } from 'react-icons/fi';
+import { FiSettings, FiHelpCircle, FiKey, FiX } from 'react-icons/fi';
 import { GeneralSettings } from './components/GeneralSettings';
 import { HumaticAISettings } from './components/HumaticAISettings';
 
@@ -46,13 +46,17 @@ const Options = () => {
     }
   };
 
+  const handleClose = () => {
+    window.close();
+  };
+
   return (
-    <div className="flex min-h-screen min-w-[768px] bg-white text-gray-900">
-      <div className="flex w-[200px] flex-shrink-0 flex-col border-r border-gray-200 bg-white">
-        <div className="px-5 pb-3 pt-6">
+    <div className="flex h-screen min-w-[768px] overflow-hidden bg-white text-gray-900">
+      <div className="flex h-full w-[200px] flex-shrink-0 flex-col border-r border-gray-200 bg-white">
+        <div className="shrink-0 px-5 pb-3 pt-6">
           <h2 className="text-[17px] font-semibold text-gray-900">{t('options_nav_header')}</h2>
         </div>
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3 pb-6 pt-2">
+        <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 pt-2">
           {navItems.map(item => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -70,9 +74,18 @@ const Options = () => {
             );
           })}
         </nav>
+        <div className="shrink-0 border-t border-gray-100 bg-white px-3 pb-6 pt-2">
+          <button
+            type="button"
+            onClick={handleClose}
+            className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900">
+            <FiX className="h-[18px] w-[18px] flex-shrink-0" aria-hidden />
+            <span className="truncate">{t('options_nav_close')}</span>
+          </button>
+        </div>
       </div>
 
-      <main className="flex-1 overflow-y-auto bg-white p-8">
+      <main className="min-h-0 flex-1 overflow-y-auto bg-white p-8">
         <div className="mx-auto min-w-[512px] max-w-screen-lg text-left">{renderTabContent()}</div>
       </main>
     </div>

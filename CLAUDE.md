@@ -26,6 +26,30 @@ Nanobrowser is an open-source AI web automation Chrome extension that runs multi
 - `pnpm -F chrome-extension test` - Run unit tests (Vitest) for core extension
   - Targeted example: `pnpm -F chrome-extension test -- -t "Sanitizer"`
 
+### After substantive UI / extension changes (agents)
+
+**Suggest** both when wrapping up (offer to run if the user wants):
+
+1. **New zip** — from repo root: `pnpm zip` → `dist-zip/extension-YYYYMMDD-HHMMSS.zip` (or load unpacked `dist/` in Chrome).
+2. **Preview harness** — serve `dist/` on port **4177**, then open [http://127.0.0.1:4177/preview.html](http://127.0.0.1:4177/preview.html):
+
+```bash
+cd dist
+python3 -m http.server 4177   # only if nothing already listens on 4177
+```
+
+Useful URLs: `?page=all` (board), `?page=side-panel&demo=1`, `?page=side-panel&demo=1&history=1`, `?page=options`. Cursor browser cannot pierce iframes on `?page=all` — use single-view URLs for interaction.
+
+### Version & release (Chrome Web Store)
+
+See also Cursor rule **`peerpane-release-version.mdc`**. Summary:
+
+1. **`pnpm update-version X.Y.Z`** — bumps all `package.json` files (`MAJOR.MINOR.PATCH` only). **Required before CWS upload** if manifest ≤ published version.
+2. **`CHANGELOG.md`** — Keep a Changelog entry for each release; draft CWS “Release notes” from it (paste in dashboard — not in the zip).
+3. **`README.md`** — update the version badge to match.
+4. **`pnpm zip`** — verify `dist/manifest.json` version, upload `dist-zip/extension-*.zip`.
+5. **Git** — commit/tag/push only when the user asks; tag `vX.Y.Z`; respect off-hours push rules (`Asia/Nicosia`).
+
 ### Workspace Tips
 
 - Scope tasks to a single workspace to speed up runs:

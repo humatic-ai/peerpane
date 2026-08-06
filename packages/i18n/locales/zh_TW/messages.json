@@ -73,6 +73,12 @@
   "chat_history_empty": {
     "message": "沒有可用的對話歷史紀錄"
   },
+  "chat_history_searchPlaceholder": {
+    "message": "搜尋對話"
+  },
+  "chat_history_noMatch": {
+    "message": "沒有符合的對話。"
+  },
   "chat_replay_starting": {
     "message": "開始重播任務：\n\n\"$TASK$\"",
     "placeholders": {
@@ -162,6 +168,9 @@
   },
   "options_nav_header": {
     "message": "設定"
+  },
+  "options_nav_close": {
+    "message": "關閉"
   },
   "options_section_configuration": {
     "message": "設定選項"
@@ -1044,6 +1053,9 @@
   "chat_tooltip_attachPage": {
     "message": "附加頁面"
   },
+  "chat_tooltip_detachPage": {
+    "message": "停止附加頁面"
+  },
   "chat_tooltip_dictate": {
     "message": "語音輸入"
   },
@@ -1088,5 +1100,17 @@
   },
   "chat_tooltip_copied": {
     "message": "已複製！"
+  },
+  "chat_tooltip_readAloud": {
+    "message": "朗讀"
+  },
+  "chat_tooltip_stopReading": {
+    "message": "停止朗讀"
+  },
+  "chat_tooltip_readAloudError": {
+    "message": "無法朗讀"
+  },
+  "chat_tooltip_jumpToLatest": {
+    "message": "跳到最新"
   }
 }

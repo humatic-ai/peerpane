@@ -35,6 +35,16 @@ export interface TranscribeAudioResult {
   duration?: number;
 }
 
+export interface SynthesizeSpeechParams {
+  baseUrl: string;
+  apiKey: string;
+  text: string;
+  voice?: string;
+  rate?: number;
+  pitch?: number;
+  signal?: AbortSignal;
+}
+
 export interface HumaticAISuggestion {
   title: string;
   prompt: string;
@@ -295,4 +305,47 @@ export async function transcribeAudio(params: TranscribeAudioParams): Promise<Tr
     language: typeof data.language === 'string' ? data.language : undefined,
     duration: typeof data.duration === 'number' ? data.duration : undefined,
   };
+}
+
+/**
+ * Text → speech via Planet 9 public TTS (`POST /voice/synthesize`).
+ * Returns MP3 bytes (audio/mpeg).
+ */
+export async function synthesizeSpeech(params: SynthesizeSpeechParams): Promise<ArrayBuffer> {
+  const baseUrl = normalizeBaseUrl(params.baseUrl);
+  if (!params.apiKey?.trim()) {
+    throw new Error('Humatic AI API key is not configured');
+  }
+  const text = params.text?.trim();
+  if (!text) {
+    throw new Error('Text is empty');
+  }
+
+  const body: Record<string, unknown> = { text };
+  if (params.voice) body.voice = params.voice;
+  if (typeof params.rate === 'number') body.rate = params.rate;
+  if (typeof params.pitch === 'number') body.pitch = params.pitch;
+
+  const response = await fetch(`${baseUrl}/voice/synthesize`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-API-Key': params.apiKey,
+    },
+    body: JSON.stringify(body),
+    signal: params.signal,
+  });
+
+  if (!response.ok) {
+    let detail = `HTTP ${response.status}`;
+    try {
+      const errBody = await response.text();
+      if (errBody) detail = `${detail}: ${errBody.slice(0, 300)}`;
+    } catch {
+      // ignore
+    }
+    throw new Error(detail);
+  }
+
+  return response.arrayBuffer();
 }

@@ -1,6 +1,6 @@
 {
   "name": "peerpane",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "description": "Humatic AI PeerPane — connects to Planet 9 to chat with your Digital Peer from any web page",
   "license": "Apache-2.0",
   "repository": {

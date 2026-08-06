@@ -10,6 +10,7 @@ import {
   type ThemePreference,
 } from '@extension/storage';
 import { t } from '@extension/i18n';
+import { LuMessageSquarePlus, LuHistory, LuArrowDown, LuArrowLeft } from 'react-icons/lu';
 import MessageList from './components/MessageList';
 import ChatInput from './components/ChatInput';
 import ChatHistoryList from './components/ChatHistoryList';
@@ -19,6 +20,7 @@ import { EventType, type AgentEvent, ExecutionState } from './types/event';
 import './SidePanel.css';
 
 const progressMessage = 'Showing progress...';
+const AUTO_SCROLL_PAUSE_THRESHOLD_PX = 80;
 
 interface Suggestion {
   title: string;
@@ -69,10 +71,17 @@ const SidePanel = () => {
     resolve: (text: string) => void;
     reject: (error: Error) => void;
   } | null>(null);
+  const pendingSynthesizeRef = useRef<{
+    resolve: (result: { audioBase64: string; mimeType: string }) => void;
+    reject: (error: Error) => void;
+  } | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const portRef = useRef<chrome.runtime.Port | null>(null);
   const heartbeatIntervalRef = useRef<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesScrollRef = useRef<HTMLDivElement>(null);
+  const followBottomRef = useRef(true);
+  const [showJumpToLatest, setShowJumpToLatest] = useState(false);
   const setInputTextRef = useRef<((text: string | ((prev: string) => string)) => void) | null>(null);
   const streamingAssistantIndexRef = useRef<number | null>(null);
   const isReplayingRef = useRef(false);
@@ -405,6 +414,21 @@ const SidePanel = () => {
               pendingTranscribeRef.current = null;
             }
             break;
+          case 'humaticai_synthesize_result':
+            if (pendingSynthesizeRef.current) {
+              pendingSynthesizeRef.current.resolve({
+                audioBase64: typeof message.audio === 'string' ? message.audio : '',
+                mimeType: typeof message.mimeType === 'string' ? message.mimeType : 'audio/mpeg',
+              });
+              pendingSynthesizeRef.current = null;
+            }
+            break;
+          case 'humaticai_synthesize_error':
+            if (pendingSynthesizeRef.current) {
+              pendingSynthesizeRef.current.reject(new Error(message.error || t('chat_tooltip_readAloudError')));
+              pendingSynthesizeRef.current = null;
+            }
+            break;
           case 'error':
             appendMessage({
               actor: Actors.SYSTEM,
@@ -432,6 +456,10 @@ const SidePanel = () => {
         if (pendingTranscribeRef.current) {
           pendingTranscribeRef.current.reject(new Error(t('errors_conn_serviceWorker')));
           pendingTranscribeRef.current = null;
+        }
+        if (pendingSynthesizeRef.current) {
+          pendingSynthesizeRef.current.reject(new Error(t('errors_conn_serviceWorker')));
+          pendingSynthesizeRef.current = null;
         }
         setInputEnabled(true);
         setShowStopButton(false);
@@ -497,6 +525,8 @@ const SidePanel = () => {
       setShowStopButton(true);
       setSuggestions([]);
       streamingAssistantIndexRef.current = null;
+      followBottomRef.current = true;
+      setShowJumpToLatest(false);
 
       if (!isFollowUpMode) {
         const titleText = displayText || text;
@@ -586,6 +616,31 @@ const SidePanel = () => {
           });
         } catch (error) {
           pendingTranscribeRef.current = null;
+          reject(error instanceof Error ? error : new Error(String(error)));
+        }
+      });
+    },
+    [setupConnection],
+  );
+
+  const requestSynthesizeSpeech = useCallback(
+    (text: string): Promise<{ audioBase64: string; mimeType: string }> => {
+      return new Promise((resolve, reject) => {
+        if (!portRef.current) {
+          setupConnection();
+        }
+        if (!portRef.current) {
+          reject(new Error(t('errors_conn_serviceWorker')));
+          return;
+        }
+        pendingSynthesizeRef.current = { resolve, reject };
+        try {
+          portRef.current.postMessage({
+            type: 'humaticai_synthesize',
+            text,
+          });
+        } catch (error) {
+          pendingSynthesizeRef.current = null;
           reject(error instanceof Error ? error : new Error(String(error)));
         }
       });
@@ -761,6 +816,8 @@ const SidePanel = () => {
     setIsHistoricalSession(false);
     setSuggestions([]);
     streamingAssistantIndexRef.current = null;
+    followBottomRef.current = true;
+    setShowJumpToLatest(false);
     stopConnection();
   };
 
@@ -772,6 +829,25 @@ const SidePanel = () => {
       console.error('Failed to load chat sessions:', error);
     }
   }, []);
+
+  // Preview / deep-link: open chat history when ?history=1 (used by preview.html board).
+  useEffect(() => {
+    if (hasApiKey !== true) return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('history') !== '1') return;
+    } catch {
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      await loadChatSessions();
+      if (!cancelled) setShowHistory(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [hasApiKey, loadChatSessions]);
 
   const handleLoadHistory = async () => {
     await loadChatSessions();
@@ -827,14 +903,30 @@ const SidePanel = () => {
     };
   }, [stopConnection]);
 
+  const handleMessagesScroll = useCallback(() => {
+    const el = messagesScrollRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    const nearBottom = distanceFromBottom < AUTO_SCROLL_PAUSE_THRESHOLD_PX;
+    followBottomRef.current = nearBottom;
+    setShowJumpToLatest(!nearBottom && el.scrollHeight > el.clientHeight);
+  }, []);
+
+  const scrollToLatest = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    followBottomRef.current = true;
+    setShowJumpToLatest(false);
+    messagesEndRef.current?.scrollIntoView({ behavior });
+  }, []);
+
   useEffect(() => {
+    if (!followBottomRef.current) return;
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, suggestions]);
 
   return (
     <div className={isDarkMode ? 'dark' : undefined}>
       <div
-        className={`flex h-screen flex-col overflow-hidden rounded-2xl border ${
+        className={`flex h-screen w-full flex-col overflow-hidden rounded-2xl border ${
           isDarkMode
             ? 'border-slate-700 bg-slate-950 text-gray-100'
             : 'border-planet9-border bg-planet9-surface text-slate-900'
@@ -846,11 +938,9 @@ const SidePanel = () => {
                 <button
                   type="button"
                   onClick={() => handleBackToChat(false)}
-                  className={`cursor-pointer ${
-                    isDarkMode ? 'text-gray-400 hover:text-gray-100' : 'text-slate-500 hover:text-slate-800'
-                  }`}
+                  className="icon-btn"
                   aria-label={t('chat_tooltip_back')}>
-                  {t('nav_back')}
+                  <LuArrowLeft size={18} strokeWidth={2} aria-hidden />
                 </button>
               </ComposerTooltip>
             )}
@@ -866,19 +956,7 @@ const SidePanel = () => {
                     className="icon-btn"
                     aria-label={t('chat_tooltip_newChat')}
                     tabIndex={0}>
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true">
-                      <path d="M12 5v14" />
-                      <path d="M5 12h14" />
-                    </svg>
+                    <LuMessageSquarePlus size={18} strokeWidth={2} aria-hidden />
                   </button>
                 </ComposerTooltip>
                 <ComposerTooltip content={t('chat_tooltip_history')} side="bottom">
@@ -889,18 +967,7 @@ const SidePanel = () => {
                     className="icon-btn"
                     aria-label={t('chat_tooltip_history')}
                     tabIndex={0}>
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true">
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                    </svg>
+                    <LuHistory size={18} strokeWidth={2} aria-hidden />
                   </button>
                 </ComposerTooltip>
               </>
@@ -909,13 +976,14 @@ const SidePanel = () => {
           </div>
         </header>
         {showHistory && hasApiKey === true ? (
-          <div className="flex min-h-0 flex-1 overflow-hidden">
+          <div className="flex min-h-0 w-full flex-1 overflow-hidden">
             <ChatHistoryList
               sessions={chatSessions}
               onSessionSelect={handleSessionSelect}
               onSessionDelete={handleSessionDelete}
               visible={true}
               isDarkMode={isDarkMode}
+              activeSessionId={currentSessionId}
             />
           </div>
         ) : (
@@ -967,26 +1035,50 @@ const SidePanel = () => {
 
             {hasApiKey === true && (
               <>
-                <div className="scrollbar-gutter-stable flex-1 overflow-x-hidden overflow-y-scroll scroll-smooth bg-white px-3 pt-4 pb-2">
-                  {messages.length > 0 && (
-                    <>
-                      <MessageList messages={messages} isDarkMode={isDarkMode} />
-                      {suggestions.length > 0 && (
-                        <div className="mt-3 flex flex-wrap gap-2 px-1">
-                          {suggestions.map((s, i) => (
-                            <button
-                              key={`${s.title}-${i}`}
-                              type="button"
-                              disabled={!inputEnabled}
-                              onClick={() => handleSuggestionClick(s.prompt)}
-                              className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-600 transition-colors hover:border-indigo-400 hover:bg-gray-50 hover:text-indigo-600 disabled:cursor-not-allowed disabled:opacity-50">
-                              {s.title}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                      <div ref={messagesEndRef} />
-                    </>
+                <div className="relative flex min-h-0 flex-1 flex-col">
+                  <div
+                    ref={messagesScrollRef}
+                    onScroll={handleMessagesScroll}
+                    className="scrollbar-gutter-stable flex-1 overflow-x-hidden overflow-y-scroll scroll-smooth bg-white px-3 pt-4 pb-2">
+                    {messages.length > 0 && (
+                      <>
+                        <MessageList
+                          messages={messages}
+                          isDarkMode={isDarkMode}
+                          onSynthesizeSpeech={requestSynthesizeSpeech}
+                        />
+                        {suggestions.length > 0 && (
+                          <div className="mt-3 flex flex-wrap gap-2 px-1">
+                            {suggestions.map((s, i) => (
+                              <button
+                                key={`${s.title}-${i}`}
+                                type="button"
+                                disabled={!inputEnabled}
+                                onClick={() => handleSuggestionClick(s.prompt)}
+                                className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-600 transition-colors hover:border-indigo-400 hover:bg-gray-50 hover:text-indigo-600 disabled:cursor-not-allowed disabled:opacity-50">
+                                {s.title}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        <div ref={messagesEndRef} />
+                      </>
+                    )}
+                  </div>
+                  {showJumpToLatest && (
+                    <div className="pointer-events-none absolute bottom-3 left-0 right-0 z-10 flex justify-center px-3">
+                      <div className="flex w-full max-w-full justify-end pr-1">
+                        <ComposerTooltip content={t('chat_tooltip_jumpToLatest')}>
+                          <button
+                            type="button"
+                            onClick={() => scrollToLatest('smooth')}
+                            className="pointer-events-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-full touch-manipulation [-webkit-tap-highlight-color:transparent] disabled:opacity-40 disabled:pointer-events-none text-gray-700 border border-white/60 bg-white/45 backdrop-blur-xl backdrop-saturate-150 shadow-[inset_0_1px_0_rgba(255,255,255,0.55),0_2px_6px_rgba(15,23,42,0.05)] hover:border-white/75 hover:bg-white/55 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_3px_8px_rgba(15,23,42,0.07)] transition-all"
+                            aria-label={t('chat_tooltip_jumpToLatest')}>
+                            <LuArrowDown size={11} strokeWidth={2.5} aria-hidden />
+                          </button>
+                        </ComposerTooltip>
+                      </div>
+                    </div>
                   )}
                 </div>
                 <div className="message-input-shell px-3 pt-2 pb-2">
